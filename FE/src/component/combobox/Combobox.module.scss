@@ -1,0 +1,59 @@
+@import "../../component/globalStyles/GlobalStyles.scss";
+
+.cbb {
+    position: relative;
+    .formSelect:focus-visible + .label {
+        color: rgb(33, 43, 54);
+    }
+    label {
+        font-weight: 600;
+
+        position: absolute;
+        font-size: 14px;
+        background-color: rgb(255, 255, 255);
+        top: -50%;
+        color: $label-gray;
+        transform: translateY(120%);
+        left: 14px;
+    }
+}
+
+.formSelect {
+    font-family: "Be Vietnam Pro";
+    width: 100%;
+    appearance: none;
+    user-select: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: currentcolor;
+    border: 1px solid $border-color;
+    // box-sizing: content-box;
+    background: none;
+    // height: 1.4375em;
+    margin: 0px;
+    -webkit-tap-highlight-color: transparent;
+    display: block;
+    min-width: 0px;
+    animation-name: mui-auto-fill-cancel;
+    animation-duration: 10ms;
+    line-height: 23px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    padding: 16.5px 14px;
+}
+
+.svg {
+    user-select: none;
+    display: inline-block;
+    fill: currentcolor;
+    flex-shrink: 0;
+    transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    font-size: 1.5rem;
+    // position: absolute;
+    pointer-events: none;
+    color: white;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    top: calc(50% - 9px);
+}

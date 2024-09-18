@@ -1,0 +1,39 @@
+.footer {
+    padding-top: 24px;
+    display: flex;
+    justify-content: end;
+
+    .footerItem {
+        display: flex;
+        align-items: center;
+        margin-left: 32px;
+        line-height: 14px;
+        font-size: 14px;
+        font-weight: 400;
+
+        svg {
+            width: 24px;
+        }
+    }
+}
+
+.controlPage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    margin-left: 8px;
+    border-radius: 100rem;
+    &:hover {
+        background-color: #f3f0f0;
+    }
+}
+
+.disableControl {
+    user-select: none;
+    cursor: not-allowed;
+    svg {
+        color: #a7b1bb;
+    }
+}
