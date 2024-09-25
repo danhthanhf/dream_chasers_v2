@@ -1,15 +1,15 @@
 package com.dreamchasers.recoverbe.controller.Public;
 
-import com.dreamchasers.recoverbe.controller.ResponseObject;
+import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
-import com.dreamchasers.recoverbe.service.Public.AuthService;
+import com.dreamchasers.recoverbe.service.AuthService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/public/auth")
+@RequestMapping("/api/v1/auth")
 public class PAuthController {
     private final AuthService authService;
 
@@ -25,7 +25,7 @@ public class PAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ResponseObject> login (@RequestBody AuthenticationRequest request){
+    public ResponseEntity<ResponseObject> login(@RequestBody AuthenticationRequest request){
         var res = authService.authenticate(request);
         return ResponseEntity.status(res.getStatus()).body(res);
     }

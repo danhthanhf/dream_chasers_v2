@@ -16,7 +16,7 @@ function CreateCategory() {
             loading: "Loading...",
             success: (data) => {
                 setCateogry("");
-                return data.mess;
+                return data.message;
             },
             error: (error) => {
                 return error.mess;

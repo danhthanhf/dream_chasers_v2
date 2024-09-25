@@ -1,11 +1,15 @@
 import publicInstance, { privateInstance, userInstance } from "../instance";
 
-export const getAllCategories = async (page = 0, size = 9999999) => {
+export const getAllCategories = async (
+    deleted = false,
+    page = 0,
+    size = 9999999
+) => {
     try {
-        const res = await publicInstance.get(
-            `/category/getAll?page=${page}&size=${size}`
+        const res = await privateInstance.get(
+            `/category/getAll?deleted=${deleted}&page=${page}&size=${size}`
         );
-        return res;
+        return res.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -223,7 +227,9 @@ export const getCategoryById = (id) => {
 
 export const createCategory = (category) => {
     try {
-        return privateInstance.post(`/category/create`, category);
+        return privateInstance.post(`/category/create`, {
+            name: category,
+        });
     } catch (error) {
         return Promise.reject(error);
     }
@@ -320,11 +326,11 @@ export const getMonthlyStatistic = async (month, year, page = 0, size = 5) => {
     }
 };
 
-export const uploadImg = async (img) => {
+export const uploadFile = async (img) => {
     try {
         const formData = new FormData();
         formData.append("file", img);
-        return await publicInstance.postForm("/upload/img", formData);
+        return await publicInstance.postForm("/upload/file", formData);
     } catch (error) {
         return Promise.reject(error);
     }

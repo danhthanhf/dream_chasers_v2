@@ -3,10 +3,10 @@ package com.dreamchasers.recoverbe.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.User;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -19,8 +19,8 @@ import java.util.function.Function;
 public class JwtService {
     private String secretKey = "";
 
-    private long expiredAT = 60L * 60;
-    private long expRT = 60L * 60 * 24 * 7;
+    @Value("${jwt.accessTokenExpiration}")
+    private long expiredAT;
 
     public JwtService() {
         this.secretKey = generateSecretKey();
@@ -30,8 +30,26 @@ public class JwtService {
         return buildToken(new HashMap<>(), userDetails, expiredAT);
     }
 
-    public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails, expRT);
+    public String refreshToken(String token) {
+        Claims claims = extractAllClaims(token);
+        return Jwts.builder()
+                .subject(claims.getSubject())
+                .claims(claims)
+                .expiration(new Date(System.currentTimeMillis() + expiredAT))
+                .issuedAt(claims.getIssuedAt())
+                .signWith(generateKey())
+                .compact();
+    }
+
+    public String disableAccessToken(String token) {
+        Claims claims = extractAllClaims(token);
+        return Jwts.builder()
+                .subject(claims.getSubject())
+                .claims(claims)
+                .expiration(new Date(System.currentTimeMillis()))
+                .issuedAt(claims.getIssuedAt())
+                .signWith(generateKey())
+                .compact();
     }
 
     private String buildToken(Map<String, Object> claims, UserDetails userDetails, long expiredAT) {
@@ -50,7 +68,7 @@ public class JwtService {
 
     public boolean isValidToken(String token, UserDetails userDetails) {
         String email = extractUserName(token);
-        return isTokenExpired(token) && Objects.equals(email, userDetails.getUsername());
+        return !isTokenExpired(token) && Objects.equals(email, userDetails.getUsername());
     }
 
     private boolean isTokenExpired(String token) {
@@ -67,7 +85,6 @@ public class JwtService {
     }
 
     private Key generateKey() {
-        System.out.println(secretKey + " - " + secretKey.length());
         byte[] key = Base64.getDecoder().decode(secretKey);
         return Keys.hmacShaKeyFor(key);
     }

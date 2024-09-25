@@ -1,0 +1,43 @@
+.swiper-button-next,
+.swiper-button-prev {
+    background-color: rgba(255, 255, 255);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    transform: translateY(-20%);
+    color: #000;
+    z-index: 101;
+}
+
+.swiper-button-next {
+    right: 0;
+    margin-right: 10px;
+}
+
+.swiper-button-prev {
+    margin-left: 10px;
+    left: 0; /* Half outside the swiper container */
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+    background-color: rgba(255, 255, 255, 0.8);
+}
+.swiper-button-next:after,
+.swiper-button-prev:after {
+    font-size: 15px;
+}
+.SwiperBulletcustom {
+    width: 32px;
+    height: 8px;
+    background-color: white;
+    border-radius: 4px;
+    margin-right: 8px;
+    opacity: 1;
+}
+
+.swiper-pagination-bullet-active.SwiperBulletcustom {
+    width: 50px;
+    background-color: #a855f7;
+}

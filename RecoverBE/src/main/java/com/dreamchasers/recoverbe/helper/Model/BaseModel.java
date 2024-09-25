@@ -30,5 +30,5 @@ public class BaseModel {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    private boolean isDeleted = false;
+    private boolean deleted = false;
 }

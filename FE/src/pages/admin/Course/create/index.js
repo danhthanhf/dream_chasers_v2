@@ -38,7 +38,7 @@ function CreateCourse() {
     const handleFileChange = (e, index, indexSection) => {
         const file = e.target.files[0];
         setIsUploading((prev) => true);
-        toast.promise(DataApi.uploadImg(file), {
+        toast.promise(DataApi.uploadFile(file), {
             loading: "Loading file...",
             success: (result) => {
                 setIsUploading(false);
@@ -88,7 +88,7 @@ function CreateCourse() {
 
     const handleUpdateVideoCourse = (e) => {
         setIsUploading((prev) => true);
-        toast.promise(DataApi.uploadImg(e.target.files[0]), {
+        toast.promise(DataApi.uploadFile(e.target.files[0]), {
             loading: "Loading video...",
             success: (result) => {
                 setIsUploading((prev) => false);
@@ -282,8 +282,8 @@ function CreateCourse() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await DataApi.getAllCategories(0, 99999999);
-                setOptions(result.content.content);
+                const result = await DataApi.getAllCategories(false, 0, 999999);
+                setOptions(result.content);
             } catch (error) {
                 console.log(error.mess);
             }

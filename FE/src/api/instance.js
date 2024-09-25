@@ -17,21 +17,30 @@ const publicInstance = axios.create({
     baseURL: "http://localhost:8080/api/v1/public",
 });
 
+export const authInstance = axios.create({
+    baseURL: "http://localhost:8080/api/v1/auth",
+});
+
+export const userInstance = axios.create({
+    baseURL: "http://localhost:8080/api/v1/me",
+});
+
+export const privateInstance = axios.create({
+    baseURL: "http://localhost:8080/api/v1/private",
+});
+
 publicInstance.interceptors.response.use(
     function (res) {
         return res.data;
     },
     function (error) {
+        console.log(error);
         return Promise.reject(error.response.data);
     }
 );
 
 publicInstance.interceptors.request.use(function (config) {
     return config;
-});
-
-export const privateInstance = axios.create({
-    baseURL: "http://localhost:8080/api/v1/private",
 });
 
 privateInstance.interceptors.response.use(
@@ -56,11 +65,8 @@ privateInstance.interceptors.request.use(function (config) {
     return config;
 });
 
-export const userInstance = axios.create({
-    baseURL: "http://localhost:8080/api/v1/me",
-});
-
 userInstance.interceptors.response.use(
+    console.log("userInstance"),
     function (res) {
         return res.data;
     },

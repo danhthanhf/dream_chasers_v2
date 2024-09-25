@@ -1,6 +1,8 @@
-import publicInstance, { userInstance } from "../instance";
-import instance, { privateInstance } from "../instance";
-
+import publicInstance, {
+    authInstance,
+    privateInstance,
+    userInstance,
+} from "../instance";
 export const enrollCourse = async (enrollDTO) => {
     try {
         return await userInstance.post("/enroll/course", enrollDTO);
@@ -16,7 +18,7 @@ export const register = async ({
     otp,
 }) => {
     try {
-        const res = await instance.post(
+        const res = await publicInstance.post(
             "/user/register",
             {
                 firstName,
@@ -36,8 +38,8 @@ export const register = async ({
 
 export const login = async ({ email, password }) => {
     try {
-        const res = await instance.post(
-            "/user/login",
+        const res = await authInstance.post(
+            "/login",
             {
                 email,
                 password,
@@ -45,7 +47,7 @@ export const login = async ({ email, password }) => {
             { "content-type": "application/json" }
         );
 
-        return res;
+        return res.data;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -53,8 +55,8 @@ export const login = async ({ email, password }) => {
 
 export const sendMail = async (email) => {
     try {
-        const res = await instance.post(
-            "/user/send-verify-email",
+        const res = await authInstance.post(
+            "/send-verify-email",
             {
                 email,
             },
@@ -70,8 +72,8 @@ export const sendMail = async (email) => {
 
 export const sendResetPasswordEmail = async (email) => {
     try {
-        return await instance.post(
-            "/user/send-reset-password-email",
+        return await userInstance.post(
+            "/send-reset-password-email",
             { email },
             { "content-type": "application/json" }
         );
@@ -82,8 +84,8 @@ export const sendResetPasswordEmail = async (email) => {
 
 export const validateCode = async ({ email, code }) => {
     try {
-        return await instance.post(
-            "/user/verify-reset-password-code",
+        return await userInstance.post(
+            "/verify-reset-password-code",
             {
                 email,
                 code,

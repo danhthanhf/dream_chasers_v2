@@ -22,13 +22,20 @@ public class User extends BaseModel implements UserDetails {
     private String firstName;
     private String lastName;
     private String password;
-    private String avtar;
+    private String avatarUrl;
     private String resetCode;
-    private Role role = Role.USER;
+    private String accessToken;
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.toString()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override

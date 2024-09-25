@@ -15,13 +15,16 @@ import java.util.List;
 @NoArgsConstructor
 public class Course extends BaseModel {
     private String title;
-    private String videoUrl;
+    private String video;
     private double price;
     private double discount;
     @Column(columnDefinition = "TEXT")
     private String description;
     private String thumbnail;
+
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<Section> sections = new ArrayList<>();
 
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
+    private List<Category> categories = new ArrayList<>();
 }

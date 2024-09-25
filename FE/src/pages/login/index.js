@@ -94,22 +94,22 @@ export default function Login() {
 
         const fetchApi = async () => {
             toast.promise(authService.login({ ...formData }), {
-                loading: "Loading...",
+                loading: "Đang tải...",
                 success: (data) => {
-                    const { token, ...user } = data.content;
+                    const { accessToken, ...user } = data.content;
+                    console.log(data.content);
                     const payload = {
-                        token,
+                        token: accessToken,
                         user,
                     };
                     dispatch(loginSlice.actions.setLogin(payload));
                     const prePath = sessionStorage.getItem("prevPath");
                     prePath ? navigate(prePath) : navigate("/");
                     sessionStorage.removeItem("prevPath");
-                    return "Welcome to Dream Chasers";
+                    return "Chào mừng bạn tới Dream Chasers";
                 },
                 error: (error) => {
-                    console.log(error);
-                    return "Email or password invalid, please try again";
+                    return "Email hoặc mật khẩu không đúng !";
                 },
             });
         };

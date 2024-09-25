@@ -1,0 +1,163 @@
+package com.dreamchasers.recoverbe.service;
+
+import com.dreamchasers.recoverbe.dto.UserDTO;
+import com.dreamchasers.recoverbe.helper.component.ResponseObject;
+import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
+import com.dreamchasers.recoverbe.helper.Request.RegisterRequest;
+import com.dreamchasers.recoverbe.jwt.JwtService;
+import com.dreamchasers.recoverbe.model.User.Role;
+import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.util.Objects;
+
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class AuthService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
+
+
+    private boolean isEmailExist(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
+
+    public ResponseObject register(RegisterRequest request) {
+        if(isEmailExist(request.getEmail())) {
+            return ResponseObject.builder()
+                    .message("Email đã tồn tại!")
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build();
+        }
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .role(Role.USER)
+                .build();
+        userRepository.save(user);
+        return ResponseObject.builder()
+                .status(HttpStatus.CREATED)
+                .build();
+    }
+
+    public User refreshAccessToken(User user) {
+        if(user == null) return null;
+        if(user.getAccessToken() == null) {
+            user.setAccessToken(jwtService.generateAccessToken(user));
+        }
+        else {
+            user.setAccessToken(jwtService.refreshToken(user.getAccessToken()));
+        }
+        return user;
+    }
+
+    public UserDTO transferEntityToDTO(User user) {
+        return UserDTO.builder()
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .avatarUrl(user.getAvatarUrl())
+                .accessToken(user.getAccessToken())
+                .role(user.getRole())
+                .build();
+    }
+
+    public ResponseObject authenticate(AuthenticationRequest request) {
+        try {
+            User user = (User) userDetailsService.loadUserByUsername(request.getEmail());
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+            user = refreshAccessToken(user);
+            UserDTO userDTO = transferEntityToDTO(user);
+            return ResponseObject.builder().status(HttpStatus.OK).content(userDTO).build();
+        }
+        catch (UsernameNotFoundException ex) {
+            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email không tồn tại!.").build();
+        }
+        catch (BadCredentialsException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.UNAUTHORIZED).message("Email hoặc mật khẩu không đúng!.").build();
+        }
+        catch (LockedException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.LOCKED).message("Tài khoản đã bị khóa!.").build();
+        }
+        catch (DisabledException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.FORBIDDEN).message("Tài khoản đã bị vô hiệu hóa!.").build();
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.INTERNAL_SERVER_ERROR).message("Lỗi hệ thống!").build();
+        }
+
+    }
+
+    public ResponseObject sendCode(String email) {
+        var user = findUserByEmail(email);
+        if(user != null) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Email đã tồn tại!").build();
+        }
+        String code = getVerifyCode();
+        mailService.sendCode(email, code);
+        return ResponseObject.builder().status(HttpStatus.OK).message("Gửi mã thành công!").content(code).build();
+    }
+
+    public ResponseObject sendResetPasswordEmail(String email) {
+        var user = findUserByEmail(email);
+        if(user == null) {
+            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email không tồn tại!").build();
+        }
+        String code = getVerifyCode();
+        mailService.sendMailResetPassword(email, code);
+        return ResponseObject.builder().status(HttpStatus.OK).message("Gửi mã thành công!").content(code).build();
+    }
+
+
+    public ResponseObject resetPassword(AuthenticationRequest request) {
+        var optionalUser = userRepository.findByEmail(request.getEmail());
+
+        if(optionalUser.isEmpty()) {
+            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email không tồn tại!").build();
+        }
+
+        User user = optionalUser.get();
+        if(!Objects.equals(user.getResetCode(), request.getCode()) || user.getResetCode() == null) {
+            return ResponseObject.builder().status(HttpStatus.UNAUTHORIZED).message("Mã xác thực không đúng!").build();
+        }
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        return ResponseObject.builder().status(HttpStatus.OK).build();
+    }
+
+    public String getVerifyCode() {
+        SecureRandom random = new SecureRandom();
+        String characters = "0123456789";
+        StringBuilder sb = new StringBuilder(6);
+        for(int i = 0; i < 6; i++) {
+            sb.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return sb.toString();
+    }
+
+    public User findUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElse(null);
+    }
+}
+
+

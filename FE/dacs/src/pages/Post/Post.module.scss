@@ -1,0 +1,56 @@
+.button {
+    position: fixed;
+    line-height: 1;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: black;
+    color: #fff;
+    border-radius: 6px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.3s;
+}
+
+.button__iconWrapper {
+    flex-shrink: 0;
+    width: 25px;
+    height: 25px;
+    position: relative;
+    color: var(--clr);
+    background-color: #fff;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.button:hover {
+    background-color: #000;
+}
+
+.button:hover .button__iconWrapper {
+    color: #000;
+}
+
+.button__iconSvgCopy {
+    position: absolute;
+    transform: translate(-150%, 150%);
+}
+
+.button:hover .button__iconSvg:first-child {
+    transition: transform 0.3s ease-in-out;
+    transform: translate(150%, -150%);
+}
+
+.button:hover .button__iconSvgCopy {
+    transition: transform 0.3s ease-in-out 0.1s;
+    transform: translate(0);
+}
+
+.innerHtmlContent * {
+    font-size: 16px; /* Hoặc bất kỳ giá trị nào bạn muốn */
+}
