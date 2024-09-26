@@ -21,7 +21,8 @@ function HistoryDeletedCategory() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategoryDeleted(
+                const result = await dataApi.getAllCategories(
+                    true,
                     page,
                     selected
                 );
@@ -39,7 +40,7 @@ function HistoryDeletedCategory() {
         setSelected(size);
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategoryDeleted(page, size);
+                const result = await dataApi.getAllCategories(true, page, size);
                 setCategories(result.content.content);
             } catch (error) {
                 console.log(error);
@@ -101,7 +102,8 @@ function HistoryDeletedCategory() {
         }
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategoryDeleted(
+                const result = await dataApi.getAllCategories(
+                    true,
                     page,
                     selected
                 );

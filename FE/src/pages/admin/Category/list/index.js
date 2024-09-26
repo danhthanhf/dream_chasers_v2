@@ -44,7 +44,11 @@ function ListCategory() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategories(page, selected);
+                const result = await dataApi.getAllCategories(
+                    false,
+                    page,
+                    selected
+                );
                 setTotalData(result.content.totalElements);
                 setCategories(result.content.content);
             } catch (error) {
@@ -58,7 +62,11 @@ function ListCategory() {
         setSelected(size);
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategories(page, size);
+                const result = await dataApi.getAllCategories(
+                    false,
+                    page,
+                    size
+                );
                 setCategories(result.content.content);
             } catch (error) {
                 console.log(error);
@@ -118,7 +126,11 @@ function ListCategory() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategories(page, selected);
+                const result = await dataApi.getAllCategories(
+                    false,
+                    page,
+                    selected
+                );
                 setCategories(result.content.content);
             } catch (error) {
                 console.log(error);

@@ -2,14 +2,14 @@ package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.model.CourseKit.Category;
+import com.dreamchasers.recoverbe.model.CourseKit.Course;
 import com.dreamchasers.recoverbe.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,8 +23,12 @@ public class CategoryService {
         return categoryRepository.findCategoryByName(name).orElse(null);
     }
 
+    public List<Category> getListByID(List<UUID> ids) {
+        return categoryRepository.findAllById(ids);
+    }
+
     public List<Category> getListByName(List<String> names) {
-        return categoryRepository.findCategoriesByNameIn(names);
+        return categoryRepository.findAllByNameIn(names);
     }
 
     public ResponseObject getAll(boolean deleted, int page, int size) {
@@ -54,5 +58,18 @@ public class CategoryService {
         return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category existed").build();
     }
 
+    public void updateCategoriesForCourse(Course course, List<String> categories) {
+        List<Category> newCategories = new ArrayList<>();
+        for(var temp : categories) {
+            var cate = categoryRepository.findByName(temp);
+            if(cate != null) {
+                newCategories.add(cate);
+                course.getCategories().add(cate);
+            }
+        }
 
- }
+        course.getCategories().removeIf(old -> !newCategories.contains(old));
+    }
+
+
+}

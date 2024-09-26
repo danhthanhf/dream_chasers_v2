@@ -1,3 +1,5 @@
+import "@mantine/core/styles.css";
+import { createTheme, MantineProvider } from "@mantine/core";
 import {
     BrowserRouter as Router,
     Routes,
@@ -7,7 +9,6 @@ import {
 } from "react-router-dom";
 import { publicRoutes, adminRoutes, userRoutes } from "./router";
 import styles from "./App.module.scss";
-import { Toaster, toast } from "sonner";
 import Header from "./layout/header";
 import LeftNavDash from "./component/dashboard/leftNavDash";
 import HeaderAdmin from "./layout/headerAdmin";
@@ -16,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Interceptors from "./Interceptor";
 import loginSlice from "./redux/reducers/loginSlice";
+
 const PrivateWrapper = ({ isAuthenticated }) => {
     const dispatch = useDispatch();
     if (isAuthenticated) {
@@ -38,84 +40,85 @@ function App() {
         }
     }, [isLoggedIn]);
 
-    console.log("Render app");
     return (
         <div className={clsx("App ", {})}>
-            <Interceptors></Interceptors>
-            <Routes>
-                {publicRoutes.map((route, index) => (
-                    <Route
-                        exact
-                        key={index}
-                        path={route.path}
-                        element={
-                            <>
-                                <Header />
-                                <div className={clsx("pt-header")}>
-                                    <route.component />
-                                </div>
-                            </>
-                        }
-                    />
-                ))}
-                {userRoutes.map((route, index) => (
-                    <Route
-                        key={index}
-                        element={
-                            <PrivateWrapper
-                                isAuthenticated={isLogged}
-                            ></PrivateWrapper>
-                        }
-                    >
+            <MantineProvider>
+                <Interceptors></Interceptors>
+                <Routes>
+                    {publicRoutes.map((route, index) => (
                         <Route
-                            path={route.path}
                             exact
                             key={index}
+                            path={route.path}
                             element={
                                 <>
-                                    {!route.path.includes("/course/detail") && (
-                                        <Header />
-                                    )}
+                                    <Header />
                                     <div className={clsx("pt-header")}>
                                         <route.component />
                                     </div>
                                 </>
                             }
                         />
-                    </Route>
-                ))}
-                {adminRoutes.map((route, index) => (
-                    <Route
-                        key={index}
-                        element={
-                            <PrivateWrapper
-                                isAuthenticated={isLogged}
-                            ></PrivateWrapper>
-                        }
-                    >
+                    ))}
+                    {userRoutes.map((route, index) => (
                         <Route
-                            path={route.path}
-                            exact
                             key={index}
                             element={
-                                <>
-                                    <HeaderAdmin></HeaderAdmin>
-                                    <div className="flex bg-white">
-                                        <LeftNavDash></LeftNavDash>
-                                        <div
-                                            className={clsx(
-                                                styles.adminContent
-                                            )}
-                                        >
+                                <PrivateWrapper
+                                    isAuthenticated={isLogged}
+                                ></PrivateWrapper>
+                            }
+                        >
+                            <Route
+                                path={route.path}
+                                exact
+                                key={index}
+                                element={
+                                    <>
+                                        {!route.path.includes(
+                                            "/course/detail"
+                                        ) && <Header />}
+                                        <div className={clsx("pt-header")}>
                                             <route.component />
                                         </div>
-                                    </div>
-                                </>
+                                    </>
+                                }
+                            />
+                        </Route>
+                    ))}
+                    {adminRoutes.map((route, index) => (
+                        <Route
+                            key={index}
+                            element={
+                                <PrivateWrapper
+                                    isAuthenticated={isLogged}
+                                ></PrivateWrapper>
                             }
-                        />
-                    </Route>
-                ))}
-            </Routes>
+                        >
+                            <Route
+                                path={route.path}
+                                exact
+                                key={index}
+                                element={
+                                    <>
+                                        <HeaderAdmin></HeaderAdmin>
+                                        <div className="flex bg-white">
+                                            <LeftNavDash></LeftNavDash>
+                                            <div
+                                                className={clsx(
+                                                    styles.adminContent
+                                                )}
+                                            >
+                                                <route.component />
+                                            </div>
+                                        </div>
+                                    </>
+                                }
+                            />
+                        </Route>
+                    ))}
+                </Routes>
+            </MantineProvider>
         </div>
     );
 }

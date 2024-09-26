@@ -96,7 +96,7 @@ function HistoryDeleted() {
                     selected
                 );
                 let categories = [];
-                categories = await dataApi.getAllCategories(0, 99999);
+                categories = await dataApi.getAllCategories(false, 0, 99999);
                 categories.content.content.push({ id: "-1", name: "All" });
                 setCourses(result.content.content);
                 setTotalData(result.content.totalElements);

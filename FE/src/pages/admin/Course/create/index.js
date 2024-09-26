@@ -1,9 +1,9 @@
 import "bootstrap/dist/css/bootstrap.min.css";
+import MultiSelect from "../../../../component/multiSelect";
 import styles from "./CreateCourse.module.scss";
 import clsx from "clsx";
 import fileSelect from "../../../../assets/images/fileSelect.svg";
 import { useEffect, useState } from "react";
-import Select from "react-select";
 import * as DataApi from "../../../../api/apiService/dataService";
 import { toast } from "sonner";
 import btnClose from "../../../../assets/images/btnClose.svg";
@@ -23,6 +23,7 @@ function CreateCourse() {
     const [options, setOptions] = useState([]);
     const [errors, setErrors] = useState({});
     const [isUploading, setIsUploading] = useState(false);
+    const [tagSelected, setTagSelected] = useState([]);
     let timerId;
 
     const handleInputChange = (e) => {
@@ -85,7 +86,6 @@ function CreateCourse() {
             categories: [...e],
         });
     };
-
     const handleUpdateVideoCourse = (e) => {
         setIsUploading((prev) => true);
         toast.promise(DataApi.uploadFile(e.target.files[0]), {
@@ -206,6 +206,15 @@ function CreateCourse() {
     const handleRemoveVideoCourse = (e) => {
         setFormData({ ...formData, video: null });
     };
+    const panelFooterTemplate = () => {
+        const length = tagSelected ? tagSelected.length : 0;
+
+        return (
+            <div className="py-2 px-3">
+                <b>{length}</b> item{length > 1 ? "s" : ""} selected.
+            </div>
+        );
+    };
 
     const validateForm = (formData) => {
         const errors = {};
@@ -256,21 +265,14 @@ function CreateCourse() {
         }
 
         const featchApi = async () => {
-            let newCategories = [];
-            formData.categories.forEach((cate) => newCategories.push(cate.id));
-            const newCourse = {
-                ...formData,
-                categories: newCategories,
-            };
-            toast.promise(DataApi.createCourse(newCourse), {
+            toast.promise(DataApi.createCourse(formData), {
                 loading: "Loading...",
                 success: () => {
                     setFormData(initFormData);
                     return "Create successfully";
                 },
                 error: (error) => {
-                    console.log(error);
-                    return error;
+                    return error.message;
                 },
             });
         };
@@ -283,7 +285,7 @@ function CreateCourse() {
         const fetchApi = async () => {
             try {
                 const result = await DataApi.getAllCategories(false, 0, 999999);
-                setOptions(result.content);
+                setOptions(result.content.map((cate) => cate.name));
             } catch (error) {
                 console.log(error.mess);
             }
@@ -343,28 +345,18 @@ function CreateCourse() {
                                 </div>
                             )}
                         </div>
+
                         <div className={clsx("flex")}>
                             <div
                                 className={clsx(styles.formField, "w-1/2 mr-9")}
                             >
-                                <Select
-                                    isMulti
-                                    onChange={handleSelectChange}
+                                <MultiSelect
                                     value={formData.categories}
-                                    getOptionLabel={(x) => x.name}
-                                    getOptionValue={(x) => x.id}
-                                    options={options}
-                                    placeholder=""
-                                    name="categories"
-                                    styles={{
-                                        control: (baseStyles, state) => ({
-                                            ...baseStyles,
-                                            borderColor: state.isFocused
-                                                ? "black"
-                                                : "#e9ecee",
-                                        }),
-                                    }}
+                                    handleChange={handleSelectChange}
+                                    data={options}
+                                    maxValues={3}
                                 />
+
                                 <label className={clsx(styles.formLabel)}>
                                     Category
                                 </label>

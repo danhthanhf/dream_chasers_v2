@@ -22,15 +22,15 @@ public class RecoverBeApplication {
         SpringApplication.run(RecoverBeApplication.class, args);
     }
 
-    @Bean
-    public CommandLineRunner commandLineRunner() {
-        return (args) -> {
-            User admin = User.builder().email("admin@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.ADMIN).build();
-            User manager = User.builder().email("manager@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.MANAGER).build();
-            User user = User.builder().email("user@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.USER).build();
-            userRepository.save(admin);
-            userRepository.saveAll(List.of(user, manager, admin));
-        };
-    }
+//    @Bean
+//    public CommandLineRunner commandLineRunner() {
+//        return (args) -> {
+//            User admin = User.builder().email("admin@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.ADMIN).build();
+//            User manager = User.builder().email("manager@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.MANAGER).build();
+//            User user = User.builder().email("user@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.USER).build();
+//            userRepository.save(admin);
+//            userRepository.saveAll(List.of(user, manager, admin));
+//        };
+//    }
 
 }

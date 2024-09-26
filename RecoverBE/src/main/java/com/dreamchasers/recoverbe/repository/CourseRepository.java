@@ -16,4 +16,5 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     Optional<Course> findByTitle(String title);
 
+    Page<Course> findAllByDeleted(boolean isDeleted, Pageable pageable);
 }

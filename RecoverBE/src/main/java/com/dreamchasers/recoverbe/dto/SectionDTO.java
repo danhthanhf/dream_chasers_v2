@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SectionDTO {
-    private int id;
+    private UUID id;
     private String title;
     private int isEdited;
     private List<Lesson> lessons;

@@ -3,23 +3,13 @@ import publicInstance, { privateInstance, userInstance } from "../instance";
 export const getAllCategories = async (
     deleted = false,
     page = 0,
-    size = 9999999
+    size = 99999
 ) => {
     try {
         const res = await privateInstance.get(
             `/category/getAll?deleted=${deleted}&page=${page}&size=${size}`
         );
         return res.content;
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-export const getAllCategoryDeleted = async (page, size) => {
-    try {
-        const res = await privateInstance.get(
-            `/category/getAllDeleted?page=${page}&size=${size}`
-        );
-        return res;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -80,7 +70,7 @@ export const getAllCourseAdmin = async (page = 0, size = 5) => {
         const result = await privateInstance.get(
             `/course/getAll?page=${page}&size=${size}`
         );
-        return result;
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }

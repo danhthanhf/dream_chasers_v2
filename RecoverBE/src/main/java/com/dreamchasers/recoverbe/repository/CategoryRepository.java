@@ -13,7 +13,8 @@ import java.util.UUID;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
     Optional<Category> findCategoryByName(String name);
-    List<Category> findCategoriesByNameIn(List<String> names);
+
+    List<Category> findAllByNameIn(List<String> names);
 
     Page<Category> findAllByDeleted(boolean isDeleted, Pageable pageable);
 
