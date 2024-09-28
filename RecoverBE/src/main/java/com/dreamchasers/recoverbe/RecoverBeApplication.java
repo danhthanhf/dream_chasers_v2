@@ -25,9 +25,9 @@ public class RecoverBeApplication {
 //    @Bean
 //    public CommandLineRunner commandLineRunner() {
 //        return (args) -> {
-//            User admin = User.builder().email("admin@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.ADMIN).build();
-//            User manager = User.builder().email("manager@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.MANAGER).build();
-//            User user = User.builder().email("user@gmail.com").password(passwordEncoder.encode("1234Thanh@")).role(Role.USER).build();
+//            User admin = User.builder().email("admin@gmail.com").lastName("Nguyen").firstName("Admin").password(passwordEncoder.encode("1234Thanh@")).role(Role.ADMIN).build();
+//            User manager = User.builder().email("manager@gmail.com").lastName("Nguyen").firstName("Manager").password(passwordEncoder.encode("1234Thanh@")).role(Role.MANAGER).build();
+//            User user = User.builder().email("user@gmail.com").lastName("Nguyen").firstName("User").password(passwordEncoder.encode("1234Thanh@")).role(Role.USER).build();
 //            userRepository.save(admin);
 //            userRepository.saveAll(List.of(user, manager, admin));
 //        };

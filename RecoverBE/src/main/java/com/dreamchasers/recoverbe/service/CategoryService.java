@@ -19,8 +19,54 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
+    public ResponseObject restoreCategoryById(UUID id) {
+        var category = categoryRepository.findById(id).orElse(null);
+        if(category == null) return ResponseObject.builder().message("Category does not exist").status(HttpStatus.BAD_REQUEST).build();
+        category.setDeleted(false);
+        categoryRepository.save(category);
+        return ResponseObject.builder().status(HttpStatus.OK).build();
+    }
+
+    public ResponseObject softDelete(UUID id) {
+        var category = categoryRepository.findById(id).orElse(null);
+        if (category == null) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category does not exist!").build();
+        }
+        category.setDeleted(true);
+        categoryRepository.save(category);
+
+        return ResponseObject.builder().status(HttpStatus.OK).build();
+    }
+
     public Category getByName(String name) {
         return categoryRepository.findCategoryByName(name).orElse(null);
+    }
+
+    public ResponseObject getById(UUID id) {
+        final ResponseObject[] result = new ResponseObject[1];
+        categoryRepository.findById(id).ifPresentOrElse((cate) -> {
+            result[0] = ResponseObject.builder().status(HttpStatus.OK).content(cate).build();
+        }, () -> {
+            result[0] = ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Category not found").build();
+        });
+        return result[0];
+    }
+
+    public ResponseObject getByTitleContaining(String title, int page, int size) {
+        var result = categoryRepository.findByNameContaining(title, PageRequest.of(page, size));
+        return ResponseObject.builder().status(HttpStatus.OK).content(result).build();
+    }
+
+    public ResponseObject getAllCategory(int page, int size) {
+        var categories = categoryRepository.findAllByDeleted(false, PageRequest.of(page, size));
+        return ResponseObject.builder().status(HttpStatus.OK).content(categories).build();
+    }
+
+    public void UpdateToTalCourseForList(List<Category> categories, boolean isAdd) {
+        for(var category : categories) {
+            category.setTotalCourse(category.getTotalCourse() + 1);
+        }
+        categoryRepository.saveAll(categories);
     }
 
     public List<Category> getListByID(List<UUID> ids) {

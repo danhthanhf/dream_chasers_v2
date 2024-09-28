@@ -3,11 +3,14 @@ import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import * as dataApi from "../../../../api/apiService/dataService";
-import { Navigate, redirect, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 function CategoryEdit() {
     const { id } = useParams();
-    const [category, setCateogry] = useState({});
+    const [category, setCateogry] = useState({
+        id: "",
+        name: "",
+    });
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setCateogry({
@@ -17,28 +20,26 @@ function CategoryEdit() {
     };
 
     useEffect(() => {
-        toast.promise(dataApi.getCategoryById(id), {
-            loading: "Loading...",
-            success: (data) => {
-                console.log(data);
-                setCateogry(data);
-                return data.mess;
-            },
-            error: (error) => {
+        const fetchData = async () => {
+            try {
+                const result = await dataApi.getCategoryById(id);
+                setCateogry(result.content);
+            } catch (error) {
                 console.log(error);
-                return error.mess;
-            },
-        });
-    }, []);
+            }
+        };
+        fetchData();
+    }, [id]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         toast.promise(dataApi.editCategory(id, category), {
             loading: "Loading...",
             success: (data) => {
-                return data.mess;
+                return "Update Sucessfully";
             },
             error: (error) => {
-                return error;
+                return error.message;
             },
         });
     };

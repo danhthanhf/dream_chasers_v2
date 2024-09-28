@@ -13,6 +13,7 @@ public class UserDTO {
     private String email;
     private String firstName;
     private String lastName;
+    private String phoneNumber;
     private String avatarUrl;
     private String accessToken;
     private List<Progress> progresses;

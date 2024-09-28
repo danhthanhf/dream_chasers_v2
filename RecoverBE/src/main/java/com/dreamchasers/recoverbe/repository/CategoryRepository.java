@@ -18,5 +18,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     Page<Category> findAllByDeleted(boolean isDeleted, Pageable pageable);
 
+    Page<Category> findByNameContaining(String name, Pageable pageable);
+
     Category findByName(String name);
 }

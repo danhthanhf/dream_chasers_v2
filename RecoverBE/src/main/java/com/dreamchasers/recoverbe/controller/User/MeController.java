@@ -1,11 +1,13 @@
 package com.dreamchasers.recoverbe.controller.User;
 
+import com.dreamchasers.recoverbe.dto.UserDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -25,6 +27,12 @@ public class MeController {
     @PostMapping("/reset-password")
     public ResponseEntity<ResponseObject> resetPassword(@RequestBody AuthenticationRequest request) {
         var result = userService.resetPassword(request);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<ResponseObject> updateProfile(@RequestPart(value = "user") UserDTO userDTO, @RequestParam(required = false) MultipartFile avatar) {
+        var result = userService.updateProfile(userDTO, avatar);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

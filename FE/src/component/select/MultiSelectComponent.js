@@ -25,7 +25,7 @@ function MultieSelect({ value, data, handleChange, maxValues = 3 }) {
                 value={value}
                 onChange={handleChange}
                 data={data}
-                maxValues={3}
+                maxValues={maxValues}
                 clearable
                 searchable
                 comboboxProps={{

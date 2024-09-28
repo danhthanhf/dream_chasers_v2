@@ -59,7 +59,7 @@ export const getAllCourse = async (page = 0, size = 5) => {
         const result = await publicInstance.get(
             `/course/getAll?page=${page}&size=${size}`
         );
-        return result;
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -80,7 +80,7 @@ export const getAllCourseDeleted = async (page, size) => {
         const result = await privateInstance.get(
             `/course/getAllDeleted?page=${page}&size=${size}`
         );
-        return result;
+        return result.content;
     } catch (error) {
         console.log(error);
         return Promise.reject(error);
@@ -95,14 +95,17 @@ export const getCourseById = async (id, isDeleted = "false") => {
     }
 };
 
-export const softDeleteCourse = async (id) => {
+export const softDeleteCourse = async (id, page = 0, selected = 5) => {
     try {
-        const result = await privateInstance.put(`/course/delete/soft/${id}`);
-        return result;
+        const result = await privateInstance.delete(
+            `/course/delete/soft/${id}?page=${page}&size=${selected}`
+        );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
 };
+
 export const hardDeleteCourse = async (id) => {
     try {
         const result = await privateInstance.delete(
@@ -123,11 +126,17 @@ export const getCoursesDeletedByCategory = (id, page, size) => {
         Promise.reject(error);
     }
 };
-export const getCoursesByCategory = async (id, page, size) => {
+export const getCoursesByCategory = async (
+    deleted = "false",
+    id,
+    page,
+    size
+) => {
     try {
-        return await publicInstance.get(
-            `/course/category?id=${id}&page=${page}&size=${size}`
+        const result = await privateInstance.get(
+            `/course/category?id=${id}&deleted=${deleted}&page=${page}&size=${size}`
         );
+        return result.content;
     } catch (error) {
         console.log(error.mess);
         Promise.reject(error);
@@ -155,11 +164,12 @@ export const getCourseByName = async (
     isDeleted = "false"
 ) => {
     try {
-        return await privateInstance.get(
+        const result = await privateInstance.get(
             `/course?title=${encodeURIComponent(
                 title
             )}&isDeleted=${isDeleted}&page=${page}&selected=${selected}`
         );
+        return result.content;
     } catch (error) {
         Promise.reject(error.mess);
     }
@@ -225,9 +235,12 @@ export const createCategory = (category) => {
     }
 };
 
-export const restoreCourseById = (id) => {
+export const restoreCourseById = async (id, page = 0, selected = 5) => {
     try {
-        return privateInstance.put(`/course/restore/${id}`);
+        const result = await privateInstance.put(
+            `/course/restore/${id}?page=${page}&size=${selected}`
+        );
+        return result.content;
     } catch (error) {
         Promise.reject(error);
     }

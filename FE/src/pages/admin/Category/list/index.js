@@ -5,14 +5,28 @@ import { toast } from "sonner";
 import * as dataApi from "../../../../api/apiService/dataService";
 import { Link } from "react-router-dom";
 import deleteIcon from "../../../../assets/images/delete.svg";
-import viewIcon from "../../../../assets/images/view.svg";
 import editIcon from "../../../../assets/images/edit.svg";
-import noDataIcon from "../../../../assets/images/ic_noData.svg";
 import Modal from "../../../../component/modal";
 
-import FooterDataAdmin from "../../../../component/footerDataAdmin";
+import DataGridComponent from "../../../../component/table";
 
 const selectes = [5, 10, 25];
+
+function reFormatCuorse(data) {
+    if (!data || data.length === 0) return [];
+    return data.map((item) => {
+        const create = new Date(item.createdAt);
+        const update = new Date(item.updatedAt);
+        return {
+            id: item.id,
+            category: item.name,
+            totalCourse: item.totalCourse,
+            createdAt: create,
+            updatedAt: update,
+            actions: item.id,
+        };
+    });
+}
 
 function ListCategory() {
     const [categories, setCategories] = useState([]);
@@ -21,61 +35,106 @@ function ListCategory() {
     const [totalData, setTotalData] = useState(0);
     const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
+    const [isLoadingData, setIsLoadingData] = useState(false);
     const [render, setRender] = useState();
 
+    const columns = [
+        {
+            field: "category",
+            headerName: "Category",
+            headerClassName: "theme-header",
+            width: 320,
+            type: "string",
+            sortable: true,
+        },
+        {
+            field: "totalCourse",
+            headerName: "Total Course",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "number",
+            renderCell: (params) => {
+                return <div className="text-center">{params.value}</div>;
+            },
+            width: 176,
+        },
+        {
+            field: "createdAt",
+            headerName: "Create At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 200,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + "" + time}</>;
+            },
+        },
+        {
+            field: "updatedAt",
+            headerName: "Updated At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 200,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + "" + time}</>;
+            },
+        },
+        {
+            field: "actions",
+            headerClassName: "theme-header",
+            width: 160,
+            type: "actions",
+            renderCell: (params) => {
+                console.log(params);
+                return (
+                    <div
+                        className={clsx(
+                            styles.field,
+                            "flex items-center h-full"
+                        )}
+                    >
+                        <div className={clsx(styles.name, "flex gap-4")}>
+                            <Link to={`/admin/category/edit/${params.value}`}>
+                                <img src={editIcon} alt="" />
+                            </Link>
+                            <button
+                                onClick={() => openDeleteModal(params.value)}
+                            >
+                                <img
+                                    src={deleteIcon}
+                                    alt=""
+                                    className="cursor-pointer"
+                                />
+                            </button>
+                        </div>
+                    </div>
+                );
+            },
+        },
+    ];
+
     const handleRemoveCategory = () => {
-        const fetchApi = async () => {
-            toast.promise(dataApi.softDeleteCategoryById(deleteId), {
-                loading: "Removing...",
-                success: () => {
-                    setDeletedModalOpen(false);
-                    setRender(!render);
-                    return "Remove successfully";
-                },
-                error: (error) => {
-                    return error.content;
-                },
-            });
-        };
-
-        fetchApi();
-    };
-
-    useEffect(() => {
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getAllCategories(
-                    false,
-                    page,
-                    selected
-                );
-                setTotalData(result.content.totalElements);
-                setCategories(result.content.content);
-            } catch (error) {
-                console.log(error.mess);
-            }
-        };
-        fetchApi();
-    }, [render]);
-
-    const handleSelectPageSizeChange = (size) => {
-        setSelected(size);
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getAllCategories(
-                    false,
-                    page,
-                    size
-                );
-                setCategories(result.content.content);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchApi();
+        toast.promise(dataApi.softDeleteCategoryById(deleteId), {
+            loading: "Removing...",
+            success: () => {
+                setDeletedModalOpen(false);
+                setRender(!render);
+                return "Remove successfully";
+            },
+            error: (error) => {
+                return error.content;
+            },
+        });
     };
 
     const handleSearchInputChange = (e) => {
+        setIsLoadingData(true);
+
         const fetchApi = async () => {
             try {
                 const result = await dataApi.getCategoryByTitle(
@@ -83,10 +142,12 @@ function ListCategory() {
                     page,
                     selected
                 );
-                setCategories(result.content.content);
-                setTotalData(result.content.totalElements);
+                setCategories(result.content);
+                setTotalData(result.totalElements);
             } catch (error) {
                 console.log(error);
+            } finally {
+                setIsLoadingData(false);
             }
         };
         const debounceApi = debounce(fetchApi, 300);
@@ -94,13 +155,8 @@ function ListCategory() {
     };
 
     const handlePageData = async (action) => {
-        const currentTotalData = page * selected + selected;
-        if (action === "next" && currentTotalData < totalData) {
-            setPage((prev) => prev + 1);
-        }
-        if (action === "previous" && page > 0) {
-            setPage((prev) => prev - 1);
-        }
+        setPage(action.page);
+        setSelected(action.pageSize);
     };
 
     let timerId;
@@ -124,6 +180,7 @@ function ListCategory() {
     };
 
     useEffect(() => {
+        setIsLoadingData(true);
         const fetchApi = async () => {
             try {
                 const result = await dataApi.getAllCategories(
@@ -131,13 +188,16 @@ function ListCategory() {
                     page,
                     selected
                 );
-                setCategories(result.content.content);
+                setCategories(result.content);
+                setTotalData(result.totalElements);
+                setIsLoadingData(false);
             } catch (error) {
+                setIsLoadingData(false);
                 console.log(error);
             }
         };
         fetchApi();
-    }, [page]);
+    }, [page, selected, render]);
 
     return (
         <div className="flex justify-center w-full ">
@@ -189,20 +249,6 @@ function ListCategory() {
                                     id="seachWrap"
                                     className={clsx(styles.search, "mr-4")}
                                 >
-                                    {/* <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        aria-hidden="true"
-                                        role="img"
-                                        className="component-iconify MuiBox-root css-1kj4kj3 iconify iconify--eva"
-                                        width="1em"
-                                        height="1em"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            fill="currentColor"
-                                            d="m20.71 19.29l-3.4-3.39A7.92 7.92 0 0 0 19 11a8 8 0 1 0-8 8a7.92 7.92 0 0 0 4.9-1.69l3.39 3.4a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42M5 11a6 6 0 1 1 6 6a6 6 0 0 1-6-6"
-                                        ></path>
-                                    </svg> */}
                                     <input
                                         onChange={handleSearchInputChange}
                                         id="searchInput"
@@ -212,161 +258,18 @@ function ListCategory() {
                                 </div>
                             </div>
                         </div>
-                        <div className={clsx(styles.mid)}>
-                            <div
-                                className={clsx(
-                                    styles.titleMid,
-                                    "row rounded-lg"
-                                )}
-                            >
-                                <div className="col-lg-2">Id</div>
-                                <div className="col-lg-5">Category</div>
-                                <div className="col-lg-3">Create at</div>
-                                <div className="col-lg-2">Action</div>
-                            </div>
-                            <div className={clsx(styles.containerData)}>
-                                {categories &&
-                                    categories.map((category, index) => {
-                                        const dateTime = new Date(
-                                            category.date
-                                        );
-
-                                        const date =
-                                            dateTime.toLocaleDateString(); // Lấy ngày tháng năm
-                                        const time =
-                                            dateTime.toLocaleTimeString();
-
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={clsx(
-                                                    styles.item,
-                                                    "row rounded-lg"
-                                                )}
-                                            >
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-2"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name
-                                                        )}
-                                                    >
-                                                        {category.id}
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-5 flex "
-                                                    )}
-                                                >
-                                                    <div className="overflow-hidden">
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name
-                                                            )}
-                                                        >
-                                                            {category.name}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-3"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name
-                                                        )}
-                                                    >
-                                                        {date}
-                                                        <br />
-                                                        {time}
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-2"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name,
-                                                            "flex gap-4"
-                                                        )}
-                                                    >
-                                                        <Link
-                                                            to={`/admin/category/detail/${category.id}`}
-                                                        >
-                                                            <img
-                                                                src={viewIcon}
-                                                                alt=""
-                                                            />
-                                                        </Link>
-                                                        <Link
-                                                            to={`/admin/category/edit/${category.id}`}
-                                                        >
-                                                            <img
-                                                                src={editIcon}
-                                                                alt=""
-                                                            />
-                                                        </Link>
-                                                        <button
-                                                            data-micromodal-trigger="modal-1"
-                                                            type="button"
-                                                            onClick={() =>
-                                                                openDeleteModal(
-                                                                    category.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <img
-                                                                src={deleteIcon}
-                                                                alt=""
-                                                                className="cursor-pointer"
-                                                            />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                {!categories.length && (
-                                    <div
-                                        className={clsx(
-                                            styles.noData,
-                                            "flex flex-col justify-center text-center"
-                                        )}
-                                    >
-                                        <img
-                                            src={noDataIcon}
-                                            alt=""
-                                            className={clsx(
-                                                styles.noDataImg,
-                                                "m-auto w-32"
-                                            )}
-                                        />
-                                        <span>No Data</span>
-                                    </div>
-                                )}
-                            </div>
-                            <FooterDataAdmin
-                                handleSelectPageSizeChange={
-                                    handleSelectPageSizeChange
-                                }
-                                totalData={totalData}
-                                size={selected}
-                                page={page}
-                                setPage={setPage}
-                            ></FooterDataAdmin>
+                        <div>
+                            <DataGridComponent
+                                columns={columns}
+                                rows={reFormatCuorse(categories)}
+                                totalElements={totalData}
+                                isLoading={isLoadingData}
+                                paginationModel={{
+                                    pageSize: selected,
+                                    page: page,
+                                }}
+                                setPaginationModel={handlePageData}
+                            ></DataGridComponent>
                         </div>
                     </div>
                 </div>

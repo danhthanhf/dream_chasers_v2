@@ -3,69 +3,148 @@ import styles from "../../Course/list/List.module.scss";
 import clsx from "clsx";
 import { toast } from "sonner";
 import * as dataApi from "../../../../api/apiService/dataService";
-import noDataIcon from "../../../../assets/images/ic_noData.svg";
 import restoreIcon from "../../../../assets/images/restore.svg";
-import Modal from "../../../../component/modal";
-import FooterDataAdmin from "../../../../component/footerDataAdmin";
+import DataGridComponent from "../../../../component/table";
 
 const selectes = [5, 10, 25];
+
+function reFormatCuorse(data) {
+    if (!data || data.length === 0) return [];
+    return data.map((item) => {
+        const create = new Date(item.createdAt);
+        const update = new Date(item.updatedAt);
+        return {
+            id: item.id,
+            category: item.name,
+            totalCourse: item.totalCourse,
+            createdAt: create,
+            updatedAt: update,
+            actions: item.id,
+        };
+    });
+}
 
 function HistoryDeletedCategory() {
     const [categories, setCategories] = useState([]);
     const [totalData, setTotalData] = useState(0);
     const [selected, setSelected] = useState(selectes[0]);
+    const [isLoadingData, setIsLoadingData] = useState(false);
     const [page, setPage] = useState(0);
     const [render, setRender] = useState();
+    const [searchName, setSearchName] = useState();
     const firstRender = useRef(true);
 
-    useEffect(() => {
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getAllCategories(
-                    true,
-                    page,
-                    selected
+    const columns = [
+        {
+            field: "category",
+            headerName: "Category",
+            headerClassName: "theme-header",
+            width: 320,
+            type: "string",
+            sortable: true,
+        },
+        {
+            field: "totalCourse",
+            headerName: "Total Course",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "number",
+            renderCell: (params) => {
+                return <div className="text-center">{params.value}</div>;
+            },
+            width: 176,
+        },
+        {
+            field: "createdAt",
+            headerName: "Create At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 200,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + "" + time}</>;
+            },
+        },
+        {
+            field: "updatedAt",
+            headerName: "Updated At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 200,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + "" + time}</>;
+            },
+        },
+        // {
+        //     field: "price",
+        //     headerName: "Price",
+        //     headerClassName: "theme-header",
+        //     type: "number",
+        //     sortable: true,
+        //     sortComparator: (v1, v2) => {
+        //         if (v1.title === "Free") return -1;
+        //         return v1 - v2;
+        //     },
+        //     width: 140,
+        //     renderCell: (params) => {
+        //         return params.value === 0
+        //             ? "Free"
+        //             : `${params.value.toLocaleString("vi-VN")} VND`;
+        //     },
+        // },
+        {
+            field: "actions",
+            headerClassName: "theme-header",
+            width: 160,
+            type: "actions",
+            renderCell: (params) => {
+                return (
+                    <div
+                        className={clsx(
+                            styles.field,
+                            "flex items-center h-full"
+                        )}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => handleRestoreCategory(params.id)}
+                        >
+                            <img src={restoreIcon} alt="" />
+                        </button>
+                    </div>
                 );
-                console.log(result);
-                setCategories(result.content.content);
-                setTotalData(result.content.totalElements);
-            } catch (error) {
-                console.log(error.mess);
-            }
-        };
-        fetchApi();
-    }, [render]);
-
-    const handleSelectPageSizeChange = (size) => {
-        setSelected(size);
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getAllCategories(true, page, size);
-                setCategories(result.content.content);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchApi();
+            },
+        },
+    ];
+    const handlePageData = async (action) => {
+        setPage(action.page);
+        setSelected(action.pageSize);
     };
 
     const handleSearchInputChange = (e) => {
+        setSearchName(e.target.value);
+        setIsLoadingData(true);
         const fetchApi = () => {
-            toast.promise(
-                dataApi.getCategoryByTitle(e.target.value, page, selected),
-                {
-                    loading: "loading...",
-                    success: (data) => {
-                        setCategories(data.content);
-                        return "Get data successfully";
-                    },
-                    error: (error) => {
-                        console.log(error);
-                        return error;
-                    },
-                }
-            );
+            try {
+                const result = dataApi.getCategoryByTitle(
+                    e.target.value,
+                    page,
+                    selected
+                );
+                setCategories(result.content);
+                setTotalData(result.totalElements);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setIsLoadingData(false);
+            }
         };
+
         const debounceApi = debounce(fetchApi, 1000);
         debounceApi();
     };
@@ -84,9 +163,9 @@ function HistoryDeletedCategory() {
     const handleRestoreCategory = (id) => {
         toast.promise(dataApi.restoreCategoryById(id), {
             loading: "loading...",
-            success: (data) => {
+            success: () => {
                 setRender(!render);
-                return data.mess;
+                return "Restore Success";
             },
             error: (error) => {
                 console.log(error);
@@ -96,10 +175,6 @@ function HistoryDeletedCategory() {
     };
 
     useEffect(() => {
-        if (firstRender.current) {
-            firstRender.current = false;
-            return;
-        }
         const fetchApi = async () => {
             try {
                 const result = await dataApi.getAllCategories(
@@ -107,14 +182,14 @@ function HistoryDeletedCategory() {
                     page,
                     selected
                 );
-                console.log(result);
-                setCategories(result.content.content);
+                setCategories(result.content);
+                setTotalData(result.totalElements);
             } catch (error) {
                 console.log(error);
             }
         };
         fetchApi();
-    }, [page]);
+    }, [page, selected, render]);
 
     return (
         <div className="flex justify-center w-full ">
@@ -144,165 +219,24 @@ function HistoryDeletedCategory() {
                                         onChange={handleSearchInputChange}
                                         id="searchInput"
                                         type="search"
+                                        value={searchName}
                                         placeholder="Search.."
                                     />
                                 </div>
                             </div>
                         </div>
-                        <div className={clsx(styles.mid)}>
-                            <div
-                                className={clsx(
-                                    styles.titleMid,
-                                    "row rounded-lg"
-                                )}
-                            >
-                                <div className="col-lg-2">Id</div>
-                                <div className="col-lg-5">Category</div>
-                                <div className="col-lg-3">Create at</div>
-                                <div className="col-lg-2">Action</div>
-                            </div>
-                            <div className={clsx(styles.containerData)}>
-                                {categories &&
-                                    categories.map((category, index) => {
-                                        const dateTime = new Date(
-                                            category.date
-                                        );
-
-                                        const date =
-                                            dateTime.toLocaleDateString(); // Lấy ngày tháng năm
-                                        const time =
-                                            dateTime.toLocaleTimeString();
-
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={clsx(
-                                                    styles.item,
-                                                    "row rounded-lg"
-                                                )}
-                                            >
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-2"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name
-                                                        )}
-                                                    >
-                                                        {category.id}
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-5 flex "
-                                                    )}
-                                                >
-                                                    <div className="overflow-hidden">
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name
-                                                            )}
-                                                        >
-                                                            {category.name}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-3"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name
-                                                        )}
-                                                    >
-                                                        {date}
-                                                        <br />
-                                                        {time}
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    className={clsx(
-                                                        styles.field,
-                                                        "col-lg-2"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.name,
-                                                            "flex gap-4"
-                                                        )}
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleRestoreCategory(
-                                                                    category.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <img
-                                                                src={
-                                                                    restoreIcon
-                                                                }
-                                                                alt=""
-                                                            />
-                                                        </button>
-
-                                                        {/* <button
-                                                            data-micromodal-trigger="modal-1"
-                                                            type="button"
-                                                            onClick={() =>
-                                                                openDeleteModal(
-                                                                    category.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <img
-                                                                src={deleteIcon}
-                                                                alt=""
-                                                                className="cursor-pointer"
-                                                            />
-                                                        </button> */}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                {!categories.length && (
-                                    <div
-                                        className={clsx(
-                                            styles.noData,
-                                            "flex flex-col justify-center text-center"
-                                        )}
-                                    >
-                                        <img
-                                            src={noDataIcon}
-                                            alt=""
-                                            className={clsx(
-                                                styles.noDataImg,
-                                                "m-auto w-32"
-                                            )}
-                                        />
-                                        <span>No Data</span>
-                                    </div>
-                                )}
-                            </div>
-                            <FooterDataAdmin
-                                handleSelectPageSizeChange={
-                                    handleSelectPageSizeChange
-                                }
-                                totalData={totalData}
-                                size={selected}
-                                page={page}
-                                setPage={setPage}
-                            ></FooterDataAdmin>
+                        <div>
+                            <DataGridComponent
+                                columns={columns}
+                                rows={reFormatCuorse(categories)}
+                                totalElements={totalData}
+                                isLoading={isLoadingData}
+                                paginationModel={{
+                                    pageSize: selected,
+                                    page: page,
+                                }}
+                                setPaginationModel={handlePageData}
+                            ></DataGridComponent>
                         </div>
                     </div>
                 </div>

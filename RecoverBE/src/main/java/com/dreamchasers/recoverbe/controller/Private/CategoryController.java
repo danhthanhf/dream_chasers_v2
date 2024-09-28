@@ -3,6 +3,7 @@ package com.dreamchasers.recoverbe.controller.Private;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.model.CourseKit.Category;
 import com.dreamchasers.recoverbe.service.CategoryService;
+import com.dreamchasers.recoverbe.service.CourseService;
 import jakarta.persistence.CascadeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,18 +36,19 @@ public class CategoryController {
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-//    @PutMapping("/delete/soft/{id}")
-//    public ResponseEntity<ResponseObject> softDelete(@PathVariable int id) {
-//        var result = categoryService.softDelete(id);
-//        return ResponseEntity.status(result.getStatus()).body(result);
-//    }
-//
-//    @PutMapping("/restore/{id}")
-//    public ResponseEntity<ResponseObject> restore(@PathVariable int id) {
-//        var result = categoryService.restoreCategoryById(id);
-//        return ResponseEntity.status(result.getStatus()).body(result);
-//    }
-//
+
+    @PutMapping("/delete/soft/{id}")
+    public ResponseEntity<ResponseObject> softDelete(@PathVariable UUID id) {
+        var result = categoryService.softDelete(id);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PutMapping("/restore/{id}")
+    public ResponseEntity<ResponseObject> restore(@PathVariable UUID id) {
+        var result = categoryService.restoreCategoryById(id);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
 //    @DeleteMapping("/delete/hard/{id}")
 //    public ResponseEntity<ResponseObject> hardDelete(@PathVariable int id) {
 //        var result = categoryService.hardDelete(id);

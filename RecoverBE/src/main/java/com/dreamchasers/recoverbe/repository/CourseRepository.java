@@ -12,9 +12,12 @@ import java.util.UUID;
 @Repository
 public interface CourseRepository extends JpaRepository<Course, UUID> {
 
+
     Page<Course> findByTitleContainingAndDeleted(String title, boolean isDeleted, Pageable pageable);
 
     Optional<Course> findByTitle(String title);
 
     Page<Course> findAllByDeleted(boolean isDeleted, Pageable pageable);
+
+    Page<Course> findAllByCategoriesIdAndDeleted(UUID id, boolean deleted, Pageable pageable);
 }

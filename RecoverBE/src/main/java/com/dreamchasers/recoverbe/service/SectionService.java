@@ -3,8 +3,12 @@ package com.dreamchasers.recoverbe.service;
 import com.dreamchasers.recoverbe.dto.CourseDTO;
 import com.dreamchasers.recoverbe.dto.SectionDTO;
 import com.dreamchasers.recoverbe.model.CourseKit.Course;
+import com.dreamchasers.recoverbe.model.CourseKit.QLesson;
+import com.dreamchasers.recoverbe.model.CourseKit.QSection;
 import com.dreamchasers.recoverbe.model.CourseKit.Section;
 import com.dreamchasers.recoverbe.repository.SectionRepository;
+import com.querydsl.jpa.impl.JPAQuery;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +20,7 @@ import java.util.List;
 public class SectionService {
     private final SectionRepository sectionRepository;
     private final LessonService lessonService;
+    private final EntityManager entityManager;
 
     public List<Section> createListSectionFromDTO(List<SectionDTO> sections) {
         List<Section> result = new ArrayList<>();
@@ -71,5 +76,14 @@ public class SectionService {
         });
     }
 
+
+    public List<Section> getSectionsByCourse(Course course) {
+        var sectionIds = course.getSections().stream().map(Section::getId).toList();
+        return new JPAQuery<Section>(entityManager)
+                .from(QSection.section)
+                .join(QSection.section.lessons, QLesson.lesson).fetchJoin()
+                .where(QSection.section.id.in(sectionIds).and(QLesson.lesson.deleted.eq(false)))
+                .fetch();
+    }
 
 }

@@ -4,6 +4,7 @@ import com.dreamchasers.recoverbe.dto.CourseDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.service.CourseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,15 @@ public class CourseController {
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
+    @GetMapping("/category")
+    public ResponseEntity<ResponseObject> getCourseByCategoryId(@RequestParam String id, @RequestParam(defaultValue = "false") boolean deleted, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+        if (id == null) {
+            return ResponseEntity.badRequest().body(ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("UUID string cannot be null").build());
+        }
+        var result = courseService.getAllCourseByCategoryId(id, deleted, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
     @PostMapping("/create")
     public ResponseEntity<ResponseObject> create(@RequestPart CourseDTO course) {
         var result = courseService.createCourse(course);
@@ -52,4 +62,18 @@ public class CourseController {
         var result = courseService.updateCourse(id, course);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
+
+    @DeleteMapping("/delete/soft/{id}")
+    public ResponseEntity<ResponseObject> softDelete(@PathVariable UUID id, @RequestParam int page, @RequestParam int size) {
+        var result = courseService.softDelete(id, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PutMapping("/restore/{id}")
+    public ResponseEntity<ResponseObject> restoreCourse(@PathVariable UUID id, @RequestParam int page, @RequestParam int size) {
+        var result = courseService.restoreCourseById(id, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+
 }

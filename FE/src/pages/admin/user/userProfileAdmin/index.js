@@ -66,16 +66,22 @@ const AdminView = () => {
     const handleSubmitChangePassword = async (e) => {
         e.preventDefault();
         if (!validatePasswordForm()) {
-            console.error("Invalid password input");
-            toast.error("Failed to update password");
             return;
         }
-        try {
-            await userApi.resetPasswordByEmail(passwords.newPassword, email);
-            toast.success("Password updated successfully");
-        } catch (error) {
-            toast.error("Failed to update password");
-        }
+        toast.promise(
+            userApi.resetPasswordByEmail(passwords.newPassword, email),
+            {
+                loading: "Loading...",
+                success: (data) => {
+                    console.log(data);
+                    return "Password changed successfully";
+                },
+                error: (err) => {
+                    console.log(err);
+                    return err.mess;
+                },
+            }
+        );
     };
 
     const validatePasswordForm = () => {
@@ -131,6 +137,7 @@ const AdminView = () => {
                 return "Update successfully";
             },
             error: (err) => {
+                console.log(err);
                 return err.mess;
             },
         });
@@ -139,7 +146,7 @@ const AdminView = () => {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await userApi.getUserByEmail(email);
+                const result = await userApi.getUserByEmailForAdmin(email);
                 setUser(result.content);
             } catch (error) {
                 console.log(error.mess);
@@ -204,15 +211,15 @@ const AdminView = () => {
                                         <img
                                             loading="lazy"
                                             src={
-                                                user.avatar
-                                                    ? user.avatar instanceof
+                                                user.avatarUrl
+                                                    ? user.avatarUrl instanceof
                                                           File ||
-                                                      user.avatar instanceof
+                                                      user.avatarUrl instanceof
                                                           Blob
                                                         ? URL.createObjectURL(
-                                                              user.avatar
+                                                              user.avatarUrl
                                                           )
-                                                        : user.avatar
+                                                        : user.avatarUrl
                                                     : avatar
                                             }
                                             alt="User avatar"
@@ -506,10 +513,11 @@ const AdminView = () => {
                                                 ></ShowPassword>
                                             </div>
                                         </div>
+
                                         {errors.confirmPassword && (
-                                            <div className="text-red-500  text-sm ml-1">
+                                            <span className="text-red-500  text-sm ml-1">
                                                 {errors.confirmPassword}
-                                            </div>
+                                            </span>
                                         )}
                                         <button
                                             type="submit"

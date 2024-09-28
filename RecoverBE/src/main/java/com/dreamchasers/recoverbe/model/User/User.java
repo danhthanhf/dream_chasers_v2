@@ -22,6 +22,7 @@ public class User extends BaseModel implements UserDetails {
     private String firstName;
     private String lastName;
     private String password;
+    private String phoneNumber;
     private String avatarUrl;
     private String resetCode;
     private String accessToken;

@@ -1,37 +1,31 @@
 import styles from "./List.module.scss";
 import clsx from "clsx";
 import { Link } from "react-router-dom";
+import SelectComponent from "../../../../component/select/SelectComponent";
 import deleteIcon from "../../../../assets/images/delete.svg";
-import noDataIcon from "../../../../assets/images/ic_noData.svg";
 import viewIcon from "../../../../assets/images/view.svg";
 import editIcon from "../../../../assets/images/edit.svg";
 import { Fragment, useEffect, useState } from "react";
 import * as dataApi from "../../../../api/apiService/dataService";
-import Select from "react-select";
 import { toast } from "sonner";
-import {
-    CheckIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    ChevronUpDownIcon,
-} from "@heroicons/react/20/solid";
-import { Listbox, Transition } from "@headlessui/react";
+
 import Modal from "../../../../component/modal";
 import DataGridComponent from "../../../../component/table";
 
 const selectes = [5, 10, 25];
 
-function reFormatData(data) {
+function reFormatCuorse(data) {
+    if (!data || data.length === 0) return [];
+
     return data.map((item) => {
         const create = new Date(item.createdAt);
         const update = new Date(item.updatedAt);
         return {
             id: item.id,
-            title: item.title,
+            course: item,
             price: item.price,
-            categories: item.categories.map((cate) => cate.name).join(", "),
             createdAt: create,
-            // updatedAt: update,
+            updatedAt: update,
             actions: item.id,
         };
     });
@@ -40,25 +34,73 @@ function reFormatData(data) {
 function ListCourse() {
     const [deletedModalOpen, setDeletedModalOpen] = useState(false);
     const [courses, setCourses] = useState([]);
-    const [options, setOptions] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [category, setCategory] = useState();
     const [totalData, setTotalData] = useState(0);
     const [deleteId, setDeleteId] = useState(null);
     const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
+    const [isLoadingData, setIsLoadingData] = useState(false);
 
     const columns = [
         {
-            field: "title",
+            field: "course",
             headerName: "Course",
-            width: 300,
+            headerClassName: "theme-header",
+            width: 316,
+            type: "string",
             sortable: true,
+            sortComparator: (v1, v2) => {
+                return v1.title - v2.title;
+            },
+            renderCell: (params) => {
+                return (
+                    <div
+                        className={clsx(
+                            styles.field,
+                            "flex h-full items-center"
+                        )}
+                    >
+                        <div className={clsx(styles.cssImg)}>
+                            <img src={params.value.thumbnail} alt="" />
+                        </div>
+                        <div className="overflow-hidden">
+                            <div
+                                className={clsx(styles.name, "overflow-hidden")}
+                            >
+                                {params.value.title}
+                            </div>
+                            <div className={clsx(styles.categories)}>
+                                {params.value.categories &&
+                                    params.value.categories
+                                        .map((cate) => cate.name)
+                                        .join(", ")}
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
         },
         {
             field: "createdAt",
             headerName: "Create At",
+            headerClassName: "theme-header",
             sortable: true,
             type: "dateTime",
-            width: 240,
+            width: 220,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + "" + time}</>;
+            },
+        },
+        {
+            field: "updatedAt",
+            headerName: "Updated At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 220,
             renderCell: (params) => {
                 const date = params.value.toLocaleDateString();
                 const time = params.value.toLocaleTimeString();
@@ -66,23 +108,22 @@ function ListCourse() {
             },
         },
         // {
-        //     field: "updatedAt",
-        //     headerName: "Updated At",
+        //     field: "categories",
         //     sortable: true,
-        //     type: "dateTime",
+        //     headerName: "Category",
         //     width: 160,
         // },
         {
-            field: "categories",
-            sortable: true,
-            headerName: "Category",
-            width: 160,
-        },
-        {
             field: "price",
             headerName: "Price",
+            headerClassName: "theme-header",
+            type: "number",
             sortable: true,
-            width: 180,
+            sortComparator: (v1, v2) => {
+                if (v1.title === "Free") return -1;
+                return v1 - v2;
+            },
+            width: 140,
             renderCell: (params) => {
                 return params.value === 0
                     ? "Free"
@@ -91,9 +132,9 @@ function ListCourse() {
         },
         {
             field: "actions",
-            headerName: "Actions",
+            headerClassName: "theme-header",
             width: 160,
-            sortable: false,
+            type: "actions",
             renderCell: (params) => {
                 return (
                     <div
@@ -127,7 +168,7 @@ function ListCourse() {
 
     const handleRemoveCourse = () => {
         const fetchApi = async () => {
-            toast.promise(dataApi.softDeleteCourse(deleteId), {
+            toast.promise(dataApi.softDeleteCourse(deleteId, page, selected), {
                 loading: "Removing...",
                 success: (data) => {
                     setCourses(data.content);
@@ -138,6 +179,7 @@ function ListCourse() {
                     return "Remove successfully";
                 },
                 error: (error) => {
+                    console.log(error);
                     return error.content;
                 },
             });
@@ -147,17 +189,8 @@ function ListCourse() {
     };
 
     const handlePageData = async (action) => {
-        const currentTotalData = page * selected + selected;
-        let updatePage = page;
-        if (action === "next" && currentTotalData < totalData) {
-            updatePage += 1;
-            setPage(updatePage);
-        }
-        if (action === "previous" && page > 0) {
-            updatePage -= 1;
-            setPage(updatePage);
-        }
-        fetchCourseUpdate(updatePage, selected);
+        setPage(action.page);
+        setSelected(action.pageSize);
     };
 
     const handleCloseModal = () => {
@@ -169,43 +202,8 @@ function ListCourse() {
         setDeletedModalOpen(true);
     };
 
-    const handleSelectChange = (e) => {
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getCoursesByCategory(
-                    e.id,
-                    page,
-                    selected
-                );
-                setCourses(result.content);
-                setTotalData(result.totalElements);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-
-        const debounceApi = debounce(fetchApi, 0);
-        debounceApi();
-    };
-
-    const fetchCourseUpdate = async (page = this.page, size = selected) => {
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getAllCourse(false, page, size);
-                setCourses((prev) => result.content);
-                setTotalData(result.totalElements);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchApi();
-    };
-
-    const handleSelectPageSizeChange = (size) => {
-        setSelected((prev) => size);
-        fetchCourseUpdate(page, size);
-    };
     const handleSearchInputChange = (e) => {
+        setIsLoadingData(true);
         const fetchApi = async () => {
             try {
                 const result = await dataApi.getCourseByName(
@@ -214,9 +212,12 @@ function ListCourse() {
                     selected
                 );
                 setCourses(result.content);
+
                 setTotalData(result.totalElements);
+                setIsLoadingData(false);
             } catch (error) {
                 console.log(error);
+                setIsLoadingData(false);
             }
         };
         const debounceApi = debounce(fetchApi, 300);
@@ -234,22 +235,70 @@ function ListCourse() {
         };
     };
 
+    const handleCategoryChange = (e) => {
+        if (e === null) return;
+        setIsLoadingData(true);
+        setCategory(e);
+        const fetchApi = async () => {
+            try {
+                const result = await dataApi.getCoursesByCategory(
+                    false,
+                    e,
+                    page,
+                    selected
+                );
+                setCourses(result.content);
+                setTotalData(result.totalElements);
+                setIsLoadingData(false);
+            } catch (error) {
+                console.log(error);
+                setIsLoadingData(false);
+            }
+        };
+
+        const debounceApi = debounce(fetchApi);
+        debounceApi();
+    };
+
+    const reformatCategories = (categories) => {
+        let temp = categories.map((cate) => ({
+            value: cate.id,
+            label: cate.name,
+        }));
+        temp.unshift({ value: "0", label: "All" });
+        return temp;
+    };
+
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                let categories = [];
-                categories = await dataApi.getAllCategories(false, 0, 99999);
                 const result = await dataApi.getAllCourseAdmin(page, selected);
-                categories.content.push({ id: "-1", name: "All" });
                 setCourses(result.content);
                 setTotalData(result.totalElements);
-                setOptions(categories.content);
             } catch (error) {
                 console.log(error);
             }
         };
         fetchApi();
     }, [page, selected]);
+
+    useEffect(() => {
+        const fetchApi = async () => {
+            try {
+                let categories = [];
+                categories = await dataApi.getAllCategories(false, 0, 99999);
+                const result = await dataApi.getAllCourseAdmin(page, selected);
+                setCourses(result.content);
+                setTotalData(result.totalElements);
+                let categoriesFormat = reformatCategories(categories.content);
+                setCategories(categoriesFormat);
+                setCategory(categoriesFormat[0].value);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        fetchApi();
+    }, []);
 
     return (
         <div className="flex justify-center w-full ">
@@ -287,14 +336,56 @@ function ListCourse() {
                     </div>
 
                     <div className="formGroup flex flex-col gap-3">
-                       
+                        <div
+                            className={clsx(
+                                styles.contentMain,
+                                "flex justify-between gap-3"
+                            )}
+                        >
+                            <div className={clsx(styles.contentItem)}>
+                                <div
+                                    className={clsx(
+                                        styles.formSelect,
+                                        "focus:border-black hover:border-black border-gray-300 w-52"
+                                    )}
+                                >
+                                    <label htmlFor="">Category</label>
+                                    <SelectComponent
+                                        value={category}
+                                        handleChange={handleCategoryChange}
+                                        placeholder="All"
+                                        data={categories}
+                                    />
+                                </div>
+                            </div>
+                            <div className={clsx(styles.contentItem, "flex-1")}>
+                                <div
+                                    id="seachWrap"
+                                    className={clsx(styles.search, "ml-0")}
+                                >
+                                    <input
+                                        onChange={handleSearchInputChange}
+                                        id="searchInput"
+                                        type="search"
+                                        placeholder="Search.."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <DataGridComponent
                                 columns={columns}
-                                rows={reFormatData(courses)}
+                                rows={reFormatCuorse(courses)}
+                                totalElements={totalData}
+                                isLoading={isLoadingData}
+                                paginationModel={{
+                                    pageSize: selected,
+                                    page: page,
+                                }}
+                                setPaginationModel={handlePageData}
                             ></DataGridComponent>
                         </div>
-                       
                     </div>
                 </div>
             </div>

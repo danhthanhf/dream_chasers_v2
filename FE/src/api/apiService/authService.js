@@ -1,3 +1,4 @@
+import { renderEditSingleSelectCell } from "@mui/x-data-grid";
 import publicInstance, {
     authInstance,
     privateInstance,
@@ -110,7 +111,7 @@ export const resetPasswordByEmail = async (password, email) => {
         return await privateInstance.put(
             `/user/resetPassword/${email}`,
             {
-                newPassword: password,
+                password : password,
                 email: email,
             },
             {
@@ -147,19 +148,21 @@ export const getAllRole = async () => {
 
 export const getUserByName = async (userName, page, size, isDelete = false) => {
     try {
-        return privateInstance.get(
+        const result = await privateInstance.get(
             `/user/search?name=${userName}&isDeleted=${isDelete}&page=${page}&size=${size}`
         );
+        return result.content;
     } catch (error) {
         Promise.reject(error);
     }
 };
 
-export const getUserByRole = (role, page, size) => {
+export const getUserByRole = async (role, deleted = false, page, size) => {
     try {
-        return privateInstance.get(
-            `/user/filter?role=${role}&page=${page}&size=${size}`
+        const result = await privateInstance.get(
+            `/user/filter?role=${role}&isDeleted=${deleted}&page=${page}&size=${size}`
         );
+        return result.content;
     } catch (error) {
         Promise.reject(error);
     }
@@ -225,6 +228,14 @@ export const logout = async () => {
 export const getUserByEmail = async (email) => {
     try {
         return userInstance.get(`${email}`);
+    } catch (error) {
+        Promise.reject(error);
+    }
+};
+
+export const getUserByEmailForAdmin = async (email) => {
+    try {
+        return await privateInstance.get(`/user/view?email=${email}`);
     } catch (error) {
         Promise.reject(error);
     }
@@ -343,11 +354,17 @@ export const removeCommentById = async (email, cmtId) => {
     }
 };
 
-export const getAllUserAndRole = async (isDelete = "false") => {
+export const getAllUserAndRole = async (
+    isDelete = "false",
+    page = 0,
+    selected = 5
+) => {
     try {
-        return await privateInstance.get(
+        const result = await privateInstance.get(
             `/user/getAllUserAndRole?isDeleted=${isDelete}`
         );
+
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }

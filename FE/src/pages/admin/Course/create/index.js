@@ -1,5 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import MultiSelect from "../../../../component/multiSelect";
+import MultiSelect from "../../../../component/select/MultiSelectComponent";
 import styles from "./CreateCourse.module.scss";
 import clsx from "clsx";
 import fileSelect from "../../../../assets/images/fileSelect.svg";

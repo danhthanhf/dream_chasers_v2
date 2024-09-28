@@ -186,7 +186,6 @@ function LeftNavDash() {
                         >
                             <span className={clsx(styles.icon)}>
                                 <svg
-                                    dataSlot="icon"
                                     fill="none"
                                     strokeWidth={1.5}
                                     stroke="currentColor"
