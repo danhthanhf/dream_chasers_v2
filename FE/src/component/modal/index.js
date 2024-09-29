@@ -4,11 +4,9 @@ import { Fragment } from "react";
 import clsx from "clsx";
 
 function Modal({
-    icon,
     isOpen,
     closeModal,
     handleRemove,
-    children,
     title = "Delete",
     description = "Are you sure want to delete?",
 }) {
@@ -42,19 +40,23 @@ function Modal({
                         >
                             <Dialog.Panel className="z-50 w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                                 <h2 className={styles.titleModal}>{title}</h2>
-                                <div className={clsx(styles.descModal, "mt-3")}>
+                                <div className={clsx(styles.descModal, "my-3")}>
                                     {description}
                                 </div>
-                                <div className={clsx("flex justify-end mt-4")}>
+                                <div className={clsx("flex justify-end gap-2")}>
                                     <button
                                         onClick={handleRemove}
-                                        className={clsx("btnModal delete")}
+                                        className={
+                                            "py-1.5 px-2 text-xs font-bold rounded-lg text-white border bg-[#ff5630] border-gray-300"
+                                        }
                                     >
                                         {title}
                                     </button>
                                     <button
                                         onClick={closeModal}
-                                        className={clsx("btnModal cancel")}
+                                        className={
+                                            "py-1.5 px-2 rounded-lg text-xs text-black font-bold uppercase border border-gray-600"
+                                        }
                                     >
                                         Cancel
                                     </button>

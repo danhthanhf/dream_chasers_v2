@@ -1,9 +1,31 @@
-import { renderEditSingleSelectCell } from "@mui/x-data-grid";
 import publicInstance, {
     authInstance,
     privateInstance,
     userInstance,
 } from "../instance";
+
+export const restoreListUser = async (ids) => {
+    try {
+        const result = await privateInstance.delete(`/user/restore/list`, {
+            params: { ids: ids.join(",") },
+        });
+        return result.data;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const softDeleteUsers = async (ids) => {
+    try {
+        const result = await privateInstance.delete(`/user/delete/soft/list`, {
+            params: { ids: ids.join(",") },
+        });
+        return result.data;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const enrollCourse = async (enrollDTO) => {
     try {
         return await userInstance.post("/enroll/course", enrollDTO);
@@ -11,6 +33,18 @@ export const enrollCourse = async (enrollDTO) => {
         return Promise.reject(error);
     }
 };
+
+export const uploadAvatar = async (avatar) => {
+    try {
+        const formData = new FormData();
+        formData.append("avatar", avatar);
+        const result = await userInstance.postForm("/upload-avatar", formData);
+        return result.data;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const register = async ({
     firstName,
     lastName,
@@ -111,7 +145,7 @@ export const resetPasswordByEmail = async (password, email) => {
         return await privateInstance.put(
             `/user/resetPassword/${email}`,
             {
-                password : password,
+                password: password,
                 email: email,
             },
             {
@@ -132,7 +166,10 @@ export const getAllUser = async () => {
 
 export const getAllDeletedUser = async () => {
     try {
-        return await privateInstance.get("/user/getAllDeleted?page=0&size=5");
+        const result = await privateInstance.get(
+            "/user/getAllDeleted?page=0&size=5"
+        );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -146,10 +183,16 @@ export const getAllRole = async () => {
     }
 };
 
-export const getUserByName = async (userName, page, size, isDelete = false) => {
+export const getUserByName = async (
+    userName,
+    role,
+    page,
+    size,
+    isDelete = false
+) => {
     try {
         const result = await privateInstance.get(
-            `/user/search?name=${userName}&isDeleted=${isDelete}&page=${page}&size=${size}`
+            `/user/search?name=${userName}&role=${role}&isDeleted=${isDelete}&page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {
@@ -170,15 +213,20 @@ export const getUserByRole = async (role, deleted = false, page, size) => {
 
 export const getUserByPage = async (page, size) => {
     try {
-        return privateInstance.get(`/user/getAll?page=${page}&size=${size}`);
+        const result = await privateInstance.get(
+            `/user/getAll?page=${page}&size=${size}`
+        );
+        return result.content;
     } catch (error) {
         Promise.reject(error);
     }
 };
 
-export const softDeleteUser = async (id) => {
+export const softDeleteUser = async (id, page = 0, size = 5) => {
     try {
-        const result = await privateInstance.put(`/user/delete/soft/${id}`);
+        const result = await privateInstance.delete(
+            `/user/delete/soft/${id}?page=${page}&size=${size}`
+        );
         return result;
     } catch (error) {
         return Promise.reject(error);
@@ -195,7 +243,7 @@ export const hardDeleteUser = async (id) => {
 
 export const restoreUserById = async (id) => {
     try {
-        return privateInstance.put(`/user/restore/${id}`);
+        return privateInstance.delete(`/user/restore/${id}`);
     } catch (error) {
         Promise.reject(error);
     }
@@ -241,16 +289,10 @@ export const getUserByEmailForAdmin = async (email) => {
     }
 };
 
-export const updateProfile = async (user, avatar) => {
-    const formData = new FormData();
-    const json = JSON.stringify(user);
-    const userBlob = new Blob([json], {
-        type: "application/json",
-    });
-    formData.append("user", userBlob);
-    formData.append("avatar", avatar);
+export const updateProfile = async (user) => {
     try {
-        return await userInstance.putForm("/update", formData);
+        const result = await userInstance.put("/update", user);
+        return result.data;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -355,13 +397,13 @@ export const removeCommentById = async (email, cmtId) => {
 };
 
 export const getAllUserAndRole = async (
-    isDelete = "false",
+    isDelete = false,
     page = 0,
     selected = 5
 ) => {
     try {
         const result = await privateInstance.get(
-            `/user/getAllUserAndRole?isDeleted=${isDelete}`
+            `/user/getAllUserAndRole?isDeleted=${isDelete}&page=${page}&size=${selected}`
         );
 
         return result.content;

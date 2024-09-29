@@ -6,11 +6,9 @@ import com.dreamchasers.recoverbe.model.CourseKit.Category;
 import com.dreamchasers.recoverbe.model.CourseKit.Course;
 import com.dreamchasers.recoverbe.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +22,16 @@ public class CourseService {
     private final SectionService sectionService;
     private final CategoryService categoryService;
 
+
+    public ResponseObject restoreList(List<UUID> ids) {
+        ids.stream().map(id -> courseRepository.findById(id).orElse( null)).forEach(c -> {
+            if(c != null) {
+                c.setDeleted(false);
+                courseRepository.save(c);
+            }
+        });
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+    }
 
     public ResponseObject restoreCourseById(UUID id, int page, int size) {
         var course = courseRepository.findById(id).orElse(null);
@@ -44,9 +52,18 @@ public class CourseService {
         return ResponseObject.builder().content(courseRepository.findAllByDeleted(false, PageRequest.of(0, 5))).status(HttpStatus.OK).build();
     }
 
+    public ResponseObject softDeleteList(List<UUID> ids) {
+        ids.stream().map(id -> getCourseById(id, false)).forEach(responseObject -> {
+            Course course = (Course) responseObject.getContent();
+            course.setDeleted(true);
+            courseRepository.save(course);
+        });
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+    }
+
     public ResponseObject getCourseById(UUID id, boolean isDeleted) {
         Course course = courseRepository.findById(id).orElse(null);
-        if (course == null) {
+        if (course == null || course.isDeleted()) {
             return ResponseObject.builder().message("Course is not exist!").status(HttpStatus.BAD_REQUEST).build();
         }
         var sections = sectionService.getSectionsByCourse(course);
@@ -72,20 +89,19 @@ public class CourseService {
         return ResponseObject.builder().status(HttpStatus.OK).message("Get successfully").content(courses).build();
     }
 
-    public ResponseObject getAllCourseByCourseTitle(String title, boolean isDeleted, int page, int size) {
-        var result = courseRepository.findByTitleContainingAndDeleted(title, isDeleted, PageRequest.of(page, size));
+    public ResponseObject getAllCourseByCourseTitleAndCategory(String title, String categoryId, boolean isDeleted, int page, int size) {
+        if (title == null || categoryId == null) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Title or category id cannot be null").build();
+        }
+        if(categoryId.equals("0")) {
+            var result = courseRepository.findByTitleContainingAndDeleted(title, isDeleted, PageRequest.of(page, size));
+            return ResponseObject.builder().status(HttpStatus.OK).content(result).build();
+        }
+        UUID id = UUID.fromString(categoryId);
+        var result = courseRepository.findByTitleContainingAndCategoriesIdAndDeleted(title, id, isDeleted, PageRequest.of(page, size));
         return ResponseObject.builder().status(HttpStatus.OK).content(result).build();
     }
 
-    public Course addCategoriesToCourse(Course course, List<String> categoryNames) {
-        for(var nane : categoryNames) {
-            Category category = categoryService.getByName(nane);
-            if(category != null) {
-                course.getCategories().add(category);
-            }
-        }
-        return course;
-    }
 
     public ResponseObject createCourse(CourseDTO request) {
         System.out.println(request);

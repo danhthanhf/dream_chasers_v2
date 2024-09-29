@@ -2,14 +2,13 @@ package com.dreamchasers.recoverbe.controller.Private;
 
 import com.dreamchasers.recoverbe.dto.ResetPasswordDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.service.AuthService;
-import com.dreamchasers.recoverbe.service.MailService;
 import com.dreamchasers.recoverbe.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -64,19 +63,31 @@ public class UserController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ResponseObject> getUserByName(@RequestParam(value = "name") String name, @RequestParam(defaultValue = "false") boolean isDeleted,
+    public ResponseEntity<ResponseObject> getUserByNameAndEmail(@RequestParam(value = "name") String name, @RequestParam String role, @RequestParam(defaultValue = "false") boolean isDeleted,
                                                         @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
-        var result = userService.getUserByName(name, isDeleted, page, size);
+        var result = userService.getUserByNameAndEmail(name, role, isDeleted, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/delete/soft/{id}")
+    @DeleteMapping("/delete/soft/{id}")
     public ResponseEntity<ResponseObject> softDelete(@PathVariable UUID id) {
         var result = userService.softDelete(id);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/restore/{id}")
+    @DeleteMapping("/delete/soft/list")
+    public ResponseEntity<ResponseObject> softDeleteUsers(@RequestParam List<UUID> ids) {
+        var result = userService.softDeleteListUser(ids);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/list")
+    public ResponseEntity<ResponseObject> restoreUsers(@RequestParam List<UUID> ids) {
+        var result = userService.restoreListUser(ids);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/{id}")
     public ResponseEntity<ResponseObject> restoreUser(@PathVariable UUID id) {
         var result = userService.restoreUserById(id);
         return ResponseEntity.status(result.getStatus()).body(result);

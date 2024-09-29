@@ -4,6 +4,7 @@ import com.dreamchasers.recoverbe.helper.Model.BaseModel;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +24,7 @@ public class User extends BaseModel implements UserDetails {
     private String lastName;
     private String password;
     private String phoneNumber;
+    @Value("{${dreamChasers.avatar}")
     private String avatarUrl;
     private String resetCode;
     private String accessToken;

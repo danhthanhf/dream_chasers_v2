@@ -5,7 +5,7 @@ import SelectComponent from "../../../../component/select/SelectComponent";
 import deleteIcon from "../../../../assets/images/delete.svg";
 import viewIcon from "../../../../assets/images/view.svg";
 import editIcon from "../../../../assets/images/edit.svg";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import * as dataApi from "../../../../api/apiService/dataService";
 import { toast } from "sonner";
 
@@ -32,15 +32,24 @@ function reFormatCuorse(data) {
 }
 
 function ListCourse() {
-    const [deletedModalOpen, setDeletedModalOpen] = useState(false);
     const [courses, setCourses] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [category, setCategory] = useState();
+    const [category, setCategory] = useState(0);
     const [totalData, setTotalData] = useState(0);
-    const [deleteId, setDeleteId] = useState(null);
+    const [selectedRow, setSelectedRow] = useState([]);
     const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
     const [isLoadingData, setIsLoadingData] = useState(false);
+    const [reRender, setReRender] = useState(false);
+    const [modalContent, setModalContent] = useState({
+        title: "DELETE",
+        description: "Are you sure want to delete?",
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
 
     const columns = [
         {
@@ -107,12 +116,6 @@ function ListCourse() {
                 return <>{date + "" + time}</>;
             },
         },
-        // {
-        //     field: "categories",
-        //     sortable: true,
-        //     headerName: "Category",
-        //     width: 160,
-        // },
         {
             field: "price",
             headerName: "Price",
@@ -151,7 +154,17 @@ function ListCourse() {
                                 <img src={editIcon} alt="" />
                             </Link>
                             <button
-                                onClick={() => openDeleteModal(params.value)}
+                                onClick={() => {
+                                    setModalContent({
+                                        ...modalContent,
+                                        title: "DELETE",
+                                        isOpen: true,
+                                        description:
+                                            "Are you sure want to delete",
+                                        handleRemove: () =>
+                                            handleRemoveCourse(params.value),
+                                    });
+                                }}
                             >
                                 <img
                                     src={deleteIcon}
@@ -166,21 +179,18 @@ function ListCourse() {
         },
     ];
 
-    const handleRemoveCourse = () => {
+    const handleRemoveCourse = (deleteId) => {
         const fetchApi = async () => {
             toast.promise(dataApi.softDeleteCourse(deleteId, page, selected), {
                 loading: "Removing...",
                 success: (data) => {
-                    setCourses(data.content);
-                    setTotalData(data.totalElements);
-                    setPage(0);
-                    setSelected(selectes[0]);
-                    setDeletedModalOpen(false);
+                    setReRender(!reRender);
+                    setModalContent({ ...modalContent, isOpen: false });
                     return "Remove successfully";
                 },
                 error: (error) => {
                     console.log(error);
-                    return error.content;
+                    return error.message;
                 },
             });
         };
@@ -193,21 +203,37 @@ function ListCourse() {
         setSelected(action.pageSize);
     };
 
-    const handleCloseModal = () => {
-        setDeletedModalOpen(false);
+    const handleRemoveCourses = async () => {
+        toast.promise(dataApi.softDeleteCourses(selectedRow), {
+            loading: "Removing...",
+            success: () => {
+                setReRender(!reRender);
+                setModalContent({ ...modalContent, isOpen: false });
+                return "Remove successfully";
+            },
+            error: (error) => {
+                console.log(error);
+                return error.content;
+            },
+        });
     };
 
     const openDeleteModal = (id) => {
-        setDeleteId(id);
-        setDeletedModalOpen(true);
+        setModalContent({
+            ...modalContent,
+            isOpen: true,
+            handleRemove: handleRemoveCourses,
+            description: `Are you sure want to delete ${selectedRow.length} user?`,
+        });
     };
 
     const handleSearchInputChange = (e) => {
         setIsLoadingData(true);
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getCourseByName(
+                const result = await dataApi.getCourseByNameAndCategory(
                     e.target.value,
+                    category,
                     page,
                     selected
                 );
@@ -235,29 +261,13 @@ function ListCourse() {
         };
     };
 
+    const handleRowSelection = (selectionModel) => {
+        setSelectedRow(selectionModel);
+    };
+
     const handleCategoryChange = (e) => {
         if (e === null) return;
-        setIsLoadingData(true);
         setCategory(e);
-        const fetchApi = async () => {
-            try {
-                const result = await dataApi.getCoursesByCategory(
-                    false,
-                    e,
-                    page,
-                    selected
-                );
-                setCourses(result.content);
-                setTotalData(result.totalElements);
-                setIsLoadingData(false);
-            } catch (error) {
-                console.log(error);
-                setIsLoadingData(false);
-            }
-        };
-
-        const debounceApi = debounce(fetchApi);
-        debounceApi();
     };
 
     const reformatCategories = (categories) => {
@@ -270,17 +280,26 @@ function ListCourse() {
     };
 
     useEffect(() => {
+        setIsLoadingData(true);
+
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCourseAdmin(page, selected);
+                const result = await dataApi.getCoursesByCategory(
+                    false,
+                    category,
+                    page,
+                    selected
+                );
                 setCourses(result.content);
                 setTotalData(result.totalElements);
             } catch (error) {
                 console.log(error);
+            } finally {
+                setIsLoadingData(false);
             }
         };
         fetchApi();
-    }, [page, selected]);
+    }, [page, selected, category, reRender]);
 
     useEffect(() => {
         const fetchApi = async () => {
@@ -335,11 +354,11 @@ function ListCourse() {
                         </div>
                     </div>
 
-                    <div className="formGroup flex flex-col gap-3">
+                    <div className="formGroup flex flex-col gap-3 ">
                         <div
                             className={clsx(
                                 styles.contentMain,
-                                "flex justify-between gap-3"
+                                "flex justify-between gap-3 items-center"
                             )}
                         >
                             <div className={clsx(styles.contentItem)}>
@@ -357,6 +376,27 @@ function ListCourse() {
                                         data={categories}
                                     />
                                 </div>
+                            </div>
+                            <div
+                                className={clsx(
+                                    "w-[160px] h-full flex items-center gap-1 cursor-pointer hover:opacity-70"
+                                )}
+                                onClick={openDeleteModal}
+                            >
+                                {selectedRow.length > 0 && (
+                                    <>
+                                        <button type="button">
+                                            <img
+                                                src={deleteIcon}
+                                                alt=""
+                                                className="w-5 h-5"
+                                            />
+                                        </button>
+                                        <span className="text-xs font-semibold text-[#ff5630]">
+                                            Delete ({selectedRow.length})
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             <div className={clsx(styles.contentItem, "flex-1")}>
                                 <div
@@ -378,6 +418,7 @@ function ListCourse() {
                                 columns={columns}
                                 rows={reFormatCuorse(courses)}
                                 totalElements={totalData}
+                                handleRowSelection={handleRowSelection}
                                 isLoading={isLoadingData}
                                 paginationModel={{
                                     pageSize: selected,
@@ -390,11 +431,11 @@ function ListCourse() {
                 </div>
             </div>
             <Modal
-                isOpen={deletedModalOpen}
-                closeModal={handleCloseModal}
-                title={"Delete"}
-                description={"Are you sure want to delete?"}
-                handleRemove={handleRemoveCourse}
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                handleRemove={modalContent.handleRemove}
+                title={modalContent.title}
+                description={modalContent.description}
             ></Modal>
         </div>
     );

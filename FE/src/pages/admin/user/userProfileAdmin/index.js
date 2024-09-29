@@ -4,7 +4,7 @@ import clsx from "clsx";
 import avatar from "../../../../assets/images/avatar_25.jpg";
 import ShowPassword from "../../../../component/auth/ShowPassword";
 import { useParams } from "react-router-dom";
-import * as userApi from "../../../../api/apiService/authService";
+import * as userService from "../../../../api/apiService/authService";
 import { toast } from "sonner";
 
 const AdminView = () => {
@@ -12,7 +12,7 @@ const AdminView = () => {
         firstName: "",
         lastName: "",
         email: "",
-        avatar: "",
+        avatarUrl: "",
         phoneNumber: "",
     });
     const [activeForm, setActiveForm] = useState("details");
@@ -42,9 +42,17 @@ const AdminView = () => {
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
-        if (file) {
-            setUser({ ...user, avatar: file });
-        }
+        toast.promise(userService.uploadAvatar(file), {
+            loading: "Upload file...",
+            success: (data) => {
+                setUser({ ...user, avatarUrl: data.content });
+                return "Upload successfully";
+            },
+            error: (err) => {
+                console.log(err);
+                return err.mess;
+            },
+        });
     };
 
     const handleSwitchPage = (e) => {
@@ -69,7 +77,7 @@ const AdminView = () => {
             return;
         }
         toast.promise(
-            userApi.resetPasswordByEmail(passwords.newPassword, email),
+            userService.resetPasswordByEmail(passwords.newPassword, email),
             {
                 loading: "Loading...",
                 success: (data) => {
@@ -129,8 +137,7 @@ const AdminView = () => {
             toast.error("Invalid input");
             return;
         }
-        const { avatar, ...userData } = user;
-        toast.promise(userApi.updateProfile(userData, avatar), {
+        toast.promise(userService.updateProfile(user), {
             loading: "Loading...",
             success: (data) => {
                 setUser(data.content);
@@ -146,7 +153,7 @@ const AdminView = () => {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await userApi.getUserByEmailForAdmin(email);
+                const result = await userService.getUserByEmailForAdmin(email);
                 setUser(result.content);
             } catch (error) {
                 console.log(error.mess);
@@ -210,18 +217,7 @@ const AdminView = () => {
                                     <div className={clsx(styles.avatar)}>
                                         <img
                                             loading="lazy"
-                                            src={
-                                                user.avatarUrl
-                                                    ? user.avatarUrl instanceof
-                                                          File ||
-                                                      user.avatarUrl instanceof
-                                                          Blob
-                                                        ? URL.createObjectURL(
-                                                              user.avatarUrl
-                                                          )
-                                                        : user.avatarUrl
-                                                    : avatar
-                                            }
+                                            src={user && user.avatarUrl}
                                             alt="User avatar"
                                         />
                                         <input
@@ -230,7 +226,6 @@ const AdminView = () => {
                                             type="file"
                                             hidden
                                             onChange={handleFileChange}
-                                            name=""
                                         />
                                         <label
                                             htmlFor="avatar"
@@ -280,7 +275,10 @@ const AdminView = () => {
                                                         onChange={
                                                             handleInputChange
                                                         }
-                                                        value={user.firstName}
+                                                        value={
+                                                            user &&
+                                                            user.firstName
+                                                        }
                                                         name="firstName"
                                                         data-validate
                                                         className={clsx(
@@ -314,7 +312,10 @@ const AdminView = () => {
                                                         onChange={
                                                             handleInputChange
                                                         }
-                                                        value={user.lastName}
+                                                        value={
+                                                            user &&
+                                                            user.lastName
+                                                        }
                                                         name="lastName"
                                                         data-validate
                                                         className={clsx(
@@ -350,7 +351,9 @@ const AdminView = () => {
                                                         onChange={
                                                             handleInputChange
                                                         }
-                                                        value={user.email}
+                                                        value={
+                                                            user && user.email
+                                                        }
                                                         name="email"
                                                         className={clsx(
                                                             styles.formInput,
@@ -385,8 +388,8 @@ const AdminView = () => {
                                                             handleInputChange
                                                         }
                                                         value={
-                                                            user.phoneNumber ||
-                                                            " "
+                                                            user &&
+                                                            user.phoneNumber
                                                         }
                                                         name="phoneNumber"
                                                         className={clsx(

@@ -4,15 +4,24 @@ import { Link } from "react-router-dom";
 import deleteIcon from "../../../../assets/images/delete.svg";
 import avatar from "../../../../assets/images/avatar_25.jpg";
 import editIcon from "../../../../assets/images/edit.svg";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import * as authApi from "../../../../api/apiService/authService";
 import { toast } from "sonner";
-import { Dialog, Transition } from "@headlessui/react";
 
 import DataGridComponent from "../../../../component/table";
 import SelectComponent from "../../../../component/select/SelectComponent";
+import Modal from "../../../../component/modal";
 
 const selectes = [5, 10, 25];
+
+const debounce = (func, delay = 600) => {
+    return () => {
+        clearTimeout(timerId);
+        timerId = setTimeout(() => {
+            func();
+        }, delay);
+    };
+};
 
 function reFormatCuorse(data) {
     if (!data || data.length === 0) return [];
@@ -29,19 +38,27 @@ function reFormatCuorse(data) {
         };
     });
 }
+let timerId;
 
 function ListUser() {
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
-    const [role, setRole] = useState([]);
+    const [role, setRole] = useState("ALL");
     const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
     const [totalData, setTotalData] = useState(0);
-    const [deletedModalOpen, setDeletedModalOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState(null);
-    const [update, setUpdate] = useState();
     const [isLoadingData, setIsLoadingData] = useState(false);
-    const firstRender = useRef(true);
+    const [selectedRow, setSelectedRow] = useState([]);
+    const [updateData, setUpdateData] = useState(false);
+    const [modalContent, setModalContent] = useState({
+        title: "Delete",
+        description: "Are you sure want to delete?",
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
     const columns = [
         {
             field: "user",
@@ -136,7 +153,16 @@ function ListUser() {
                         </Link>
 
                         <button
-                            onClick={() => openDeleteModal(params.value.id)}
+                            onClick={() => {
+                                setModalContent({
+                                    ...modalContent,
+                                    title: "DELETE",
+                                    isOpen: true,
+                                    description: "Are you sure want to delete",
+                                    handleRemove: () =>
+                                        handleRemoveUser(params.value.id),
+                                });
+                            }}
                         >
                             <img
                                 src={deleteIcon}
@@ -150,18 +176,17 @@ function ListUser() {
         },
     ];
 
-    const handleRemoveUser = () => {
+    const handleRemoveUser = (id) => {
         const fetchApi = async () => {
-            toast.promise(authApi.softDeleteUser(deleteId), {
+            toast.promise(authApi.softDeleteUser(id), {
                 loading: "Removing...",
                 success: () => {
-                    setUpdate(!update);
-                    setDeletedModalOpen(false);
+                    setModalContent({ ...modalContent, isOpen: false });
+                    setUpdateData(!updateData);
                     return "Delete successfully";
                 },
                 error: (error) => {
-                    console.log(error);
-                    return error.mess;
+                    return error.message;
                 },
             });
         };
@@ -169,7 +194,7 @@ function ListUser() {
         fetchApi();
     };
 
-    const handleSelectChange = (e) => {
+    const handleRoleChange = (e) => {
         setRole(e);
         setIsLoadingData(true);
         const fetchApi = async () => {
@@ -200,8 +225,10 @@ function ListUser() {
             try {
                 const data = await authApi.getUserByName(
                     e.target.value,
+                    role,
                     page,
-                    selected
+                    selected,
+                    false
                 );
                 setUsers(data.content);
                 setTotalData(data.totalElements);
@@ -216,22 +243,16 @@ function ListUser() {
         debounceApi();
     };
 
-    let timerId;
-
-    const debounce = (func, delay = 600) => {
-        return () => {
-            clearTimeout(timerId);
-            timerId = setTimeout(() => {
-                func();
-            }, delay);
-        };
-    };
-
     useEffect(() => {
+        setIsLoadingData(true);
         const fetchApi = async () => {
             try {
                 let array = [];
-                const result = await authApi.getAllUserAndRole(page, selected);
+                const result = await authApi.getAllUserAndRole(
+                    false,
+                    page,
+                    selected
+                );
                 result.roles.map((value) =>
                     array.push({ value: value, label: value })
                 );
@@ -241,39 +262,44 @@ function ListUser() {
                 setUsers(result.users.content);
             } catch (error) {
                 console.log(error);
+            } finally {
+                setIsLoadingData(false);
             }
         };
         fetchApi();
-    }, [update]);
-
-    useEffect(() => {
-        if (firstRender.current) {
-            firstRender.current = false;
-            return;
-        }
-        const fetchApi = async () => {
-            try {
-                const result = await authApi.getUserByPage(page, selected);
-                setUsers(result.content.content);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchApi();
-    }, [page, selected]);
+    }, [page, selected, updateData]);
 
     const handlePageData = async (action) => {
         setPage(action.page);
         setSelected(action.pageSize);
     };
 
-    const handleCloseModal = () => {
-        setDeletedModalOpen(false);
+    const openDeleteModal = () => {
+        setModalContent({
+            ...modalContent,
+            isOpen: true,
+            handleRemove: handleRemoveUsers,
+            description: `Are you sure want to delete ${selectedRow.length} user?`,
+        });
     };
 
-    const openDeleteModal = (id) => {
-        setDeleteId(id);
-        setDeletedModalOpen(true);
+    const handleRemoveUsers = () => {
+        toast.promise(authApi.softDeleteUsers(selectedRow), {
+            loading: "Removing...",
+            success: () => {
+                setUpdateData(!updateData);
+                setModalContent({ ...modalContent, isOpen: false });
+                return "Delete successfully";
+            },
+            error: (error) => {
+                console.log(error);
+                return error.message;
+            },
+        });
+    };
+
+    const handleRowSelection = (selectionModel) => {
+        setSelectedRow(selectionModel);
     };
 
     return (
@@ -312,7 +338,7 @@ function ListUser() {
                         <div
                             className={clsx(
                                 styles.contentMain,
-                                "flex justify-between gap-3"
+                                "flex justify-between gap-3 items-center"
                             )}
                         >
                             <div className={clsx(styles.contentItem)}>
@@ -325,11 +351,33 @@ function ListUser() {
                                     <label htmlFor="">Role</label>
                                     <SelectComponent
                                         value={role}
-                                        handleChange={handleSelectChange}
+                                        handleChange={handleRoleChange}
                                         placeholder="All"
                                         data={roles}
                                     />
                                 </div>
+                            </div>
+
+                            <div
+                                className={clsx(
+                                    "w-[160px] h-full flex items-center gap-1 cursor-pointer hover:opacity-70"
+                                )}
+                                onClick={openDeleteModal}
+                            >
+                                {selectedRow.length > 0 && (
+                                    <>
+                                        <button type="button">
+                                            <img
+                                                src={deleteIcon}
+                                                alt=""
+                                                className="w-5 h-5"
+                                            />
+                                        </button>
+                                        <span className="text-xs font-semibold text-[#ff5630]">
+                                            Delete ({selectedRow.length})
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             <div className={clsx(styles.contentItem, "flex-1")}>
                                 <div
@@ -351,6 +399,7 @@ function ListUser() {
                                 rows={reFormatCuorse(users)}
                                 totalElements={totalData}
                                 isLoading={isLoadingData}
+                                handleRowSelection={handleRowSelection}
                                 paginationModel={{
                                     pageSize: selected,
                                     page: page,
@@ -362,71 +411,13 @@ function ListUser() {
                 </div>
             </div>
 
-            <Transition appear show={deletedModalOpen} as={Fragment}>
-                <Dialog
-                    as="div"
-                    className="relative z-10"
-                    onClose={handleCloseModal}
-                >
-                    <Transition.Child
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
-                    >
-                        <div className="fixed inset-0 bg-black bg-opacity-25" />
-                    </Transition.Child>
-
-                    <div className="fixed inset-0 overflow-y-auto overlay">
-                        <div className="flex min-h-full items-center justify-center p-4 text-center">
-                            <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0 scale-95"
-                                enterTo="opacity-100 scale-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100 scale-100"
-                                leaveTo="opacity-0 scale-95"
-                            >
-                                <Dialog.Panel className="z-50 w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                    <h2 className={styles.titleModal}>
-                                        Delete
-                                    </h2>
-                                    <div
-                                        className={clsx(
-                                            styles.descModal,
-                                            "mt-3"
-                                        )}
-                                    >
-                                        Are you sure want to delete?
-                                    </div>
-                                    <div
-                                        className={clsx(
-                                            "flex justify-end mt-4"
-                                        )}
-                                    >
-                                        <button
-                                            onClick={handleRemoveUser}
-                                            className={clsx("btnModal delete")}
-                                        >
-                                            Delete
-                                        </button>
-                                        <button
-                                            onClick={handleCloseModal}
-                                            className={clsx("btnModal cancel")}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </Dialog.Panel>
-                            </Transition.Child>
-                        </div>
-                    </div>
-                </Dialog>
-            </Transition>
+            <Modal
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                handleRemove={modalContent.handleRemove}
+                title={modalContent.title}
+                description={modalContent.description}
+            ></Modal>
         </div>
     );
 }

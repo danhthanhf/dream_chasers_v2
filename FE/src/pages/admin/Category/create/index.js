@@ -19,7 +19,7 @@ function CreateCategory() {
                 return data.message;
             },
             error: (error) => {
-                return error.mess;
+                return error.message;
             },
         });
     };

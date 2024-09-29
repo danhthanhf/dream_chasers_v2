@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -17,11 +18,12 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping("")
-    public ResponseEntity<ResponseObject> getCourseByCourseTitle(@RequestParam("title") String title,
+    public ResponseEntity<ResponseObject> getCourseByTitle(@RequestParam("title") String title,
+                                                                 @RequestParam String categoryId,
                                                                  @RequestParam(defaultValue = "0") int page,
                                                                  @RequestParam(defaultValue = "5") int size
             , @RequestParam(defaultValue = "false") boolean isDeleted) {
-        var result = courseService.getAllCourseByCourseTitle(title, isDeleted, page, size);
+        var result = courseService.getAllCourseByCourseTitleAndCategory(title, categoryId, isDeleted, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
@@ -69,9 +71,21 @@ public class CourseController {
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/restore/{id}")
+    @DeleteMapping("/delete/soft/list")
+    public ResponseEntity<ResponseObject> softDeleteList(@RequestParam List<UUID> ids) {
+        var result = courseService.softDeleteList(ids);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/{id}")
     public ResponseEntity<ResponseObject> restoreCourse(@PathVariable UUID id, @RequestParam int page, @RequestParam int size) {
         var result = courseService.restoreCourseById(id, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/list")
+    public ResponseEntity<ResponseObject> restoreListCourse(@RequestParam List<UUID> ids) {
+        var result = courseService.restoreList(ids);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

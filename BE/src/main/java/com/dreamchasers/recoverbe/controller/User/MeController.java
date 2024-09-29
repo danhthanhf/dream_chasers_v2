@@ -3,6 +3,7 @@ package com.dreamchasers.recoverbe.controller.User;
 import com.dreamchasers.recoverbe.dto.UserDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
+import com.dreamchasers.recoverbe.model.User.User;
 import com.dreamchasers.recoverbe.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,12 @@ import java.util.UUID;
 @RequestMapping("/api/v1/me")
 public class MeController {
     private final UserService userService;
+
+    @PostMapping("/upload-avatar")
+    public ResponseEntity<ResponseObject> uploadAvatar(@RequestPart ("avatar") MultipartFile avatar) {
+        var result = userService.uploadAvatar(avatar);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
 
     @PostMapping("/logout")
     public ResponseEntity<ResponseObject> logout(String email) {
@@ -31,20 +38,8 @@ public class MeController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<ResponseObject> updateProfile(@RequestPart(value = "user") UserDTO userDTO, @RequestParam(required = false) MultipartFile avatar) {
-        var result = userService.updateProfile(userDTO, avatar);
-        return ResponseEntity.status(result.getStatus()).body(result);
-    }
-
-    @PutMapping("/delete/soft/{id}")
-    public ResponseEntity<ResponseObject> softDelete(@PathVariable UUID id) {
-        var result = userService.softDelete(id);
-        return ResponseEntity.status(result.getStatus()).body(result);
-    }
-
-    @PutMapping("/restore/{id}")
-    public ResponseEntity<ResponseObject> restoreUser(@PathVariable UUID id) {
-        var result = userService.restoreUserById(id);
+    public ResponseEntity<ResponseObject> updateProfile(@RequestBody UserDTO userDTO) {
+        var result = userService.updateProfile(userDTO);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 }

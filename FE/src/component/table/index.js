@@ -1,6 +1,7 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, useGridApiRef } from "@mui/x-data-grid";
+import { columnGroupsStateInitializer } from "@mui/x-data-grid/internals";
 
 export default function DataGridComponent({
     columns = [],
@@ -13,42 +14,49 @@ export default function DataGridComponent({
     },
     setPaginationModel,
     rowHeight = 64,
+    handleRowSelection,
 }) {
     return (
-        <Box
-            sx={{
-                width: "100%",
-                "& .theme-header": {
-                    backgroundColor: "#f4f6f8",
-                },
-            }}
-        >
-            <DataGrid
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                autoHeight
-                rowHeight={rowHeight}
-                rows={rows}
-                paginationMode="server"
-                rowCount={totalElements}
-                columns={columns}
-                loading={isLoading}
-                pagination
-                pageSizeOptions={[5, 10, 25]}
-                checkboxSelection
+        <>
+            <Box
                 sx={{
-                    "& .MuiDataGrid-root": {
-                        fontFamily: "Be Vietnam Pro, Helvetica Neue",
-                    },
-                    "& .MuiDataGrid-cell": {
-                        fontFamily: "Be Vietnam Pro, Helvetica Neue", // Thay đổi font chữ cho các ô
-                    },
-                    "& .MuiDataGrid-columnHeaders": {
-                        fontFamily: "Be Vietnam Pro, Helvetica Neue",
+                    width: "100%",
+                    "& .theme-header": {
+                        backgroundColor: "#f4f6f8",
                     },
                 }}
-                disableRowSelectionOnClick
-            />
-        </Box>
+            >
+                <DataGrid
+                    getSelectedRows={() => {
+                        console.log("aasd");
+                    }}
+                    onRowSelectionModelChange={handleRowSelection}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={setPaginationModel}
+                    autoHeight
+                    rowHeight={rowHeight}
+                    rows={rows}
+                    paginationMode="server"
+                    rowCount={totalElements}
+                    columns={columns}
+                    loading={isLoading}
+                    pagination
+                    pageSizeOptions={[5, 10, 25]}
+                    checkboxSelection
+                    sx={{
+                        "& .MuiDataGrid-root": {
+                            fontFamily: "Be Vietnam Pro, Helvetica Neue",
+                        },
+                        "& .MuiDataGrid-cell": {
+                            fontFamily: "Be Vietnam Pro, Helvetica Neue", // Thay đổi font chữ cho các ô
+                        },
+                        "& .MuiDataGrid-columnHeaders": {
+                            fontFamily: "Be Vietnam Pro, Helvetica Neue",
+                        },
+                    }}
+                    disableRowSelectionOnClick
+                />
+            </Box>
+        </>
     );
 }

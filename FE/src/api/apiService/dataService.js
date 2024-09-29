@@ -1,4 +1,26 @@
-import publicInstance, { privateInstance, userInstance } from "../instance";
+import publicInstance, { privateInstance } from "../instance";
+
+export const restoreListCourse = async (ids) => {
+    try {
+        return await privateInstance.delete(`/course/restore/list`, {
+            params: { ids: ids.join(", ") },
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const softDeleteCourses = async (ids) => {
+    try {
+        return await privateInstance.delete(`/course/delete/soft/list`, {
+            params: {
+                ids: ids.join(", "),
+            },
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
 
 export const getAllCategories = async (
     deleted = false,
@@ -157,8 +179,9 @@ export const searchCourseByNameAndPostByTitle = async (
     }
 };
 
-export const getCourseByName = async (
+export const getCourseByNameAndCategory = async (
     title,
+    categoryId = 0,
     page = 0,
     selected = 5,
     isDeleted = "false"
@@ -167,7 +190,7 @@ export const getCourseByName = async (
         const result = await privateInstance.get(
             `/course?title=${encodeURIComponent(
                 title
-            )}&isDeleted=${isDeleted}&page=${page}&selected=${selected}`
+            )}&categoryId=${categoryId}&isDeleted=${isDeleted}&page=${page}&selected=${selected}`
         );
         return result.content;
     } catch (error) {
@@ -237,7 +260,7 @@ export const createCategory = (category) => {
 
 export const restoreCourseById = async (id, page = 0, selected = 5) => {
     try {
-        const result = await privateInstance.put(
+        const result = await privateInstance.delete(
             `/course/restore/${id}?page=${page}&size=${selected}`
         );
         return result.content;

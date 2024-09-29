@@ -38,36 +38,35 @@ function CreateCourse() {
 
     const handleFileChange = (e, index, indexSection) => {
         const file = e.target.files[0];
-        setIsUploading((prev) => true);
+        setIsUploading(true);
         toast.promise(DataApi.uploadFile(file), {
             loading: "Loading file...",
             success: (result) => {
                 setIsUploading(false);
-                if (file.type === "video/mp4") {
-                    const updateSection = {
-                        ...formData.sections[indexSection],
-                    };
-                    updateSection.lessons[index] = {
-                        ...updateSection.lessons[index],
-                        video: result.content,
-                    };
-                    const updateSections = [...formData.sections];
-                    updateSections[indexSection] = updateSection;
-
-                    setFormData((prev) => {
-                        return {
-                            ...prev,
-                            sections: [...updateSections],
+                setFormData((prev) => {
+                    const updatedSections = [...prev.sections];
+                    if (file.type === "video/mp4") {
+                        const updatedSection = {
+                            ...updatedSections[indexSection],
+                            lessons: updatedSections[indexSection].lessons.map(
+                                (lesson, lessonIndex) =>
+                                    lessonIndex === index
+                                        ? { ...lesson, video: result.content }
+                                        : lesson
+                            ),
                         };
-                    });
-                } else {
-                    setFormData((prev) => {
+                        updatedSections[indexSection] = updatedSection;
+                    } else {
                         return {
                             ...prev,
                             thumbnail: result.content,
                         };
-                    });
-                }
+                    }
+                    return {
+                        ...prev,
+                        sections: updatedSections,
+                    };
+                });
                 return "Uploading successfully...";
             },
             error: (error) => {
