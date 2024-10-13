@@ -18,6 +18,10 @@ public class Course extends BaseModel {
     private String video;
     private double price;
     private double discount;
+    private double rating;
+    private int totalDuration;
+    private int totalRegister;
+
     @Column(columnDefinition = "TEXT")
     private String description;
     private String thumbnail;

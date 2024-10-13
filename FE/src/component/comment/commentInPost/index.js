@@ -41,6 +41,7 @@ export default function CommentInPost({ openModal, funcCloseModal, post }) {
     const onConnected = () => {
         stompClient.subscribe(`/comment/post/${post.id}`, onMessageReceived);
     };
+    
     const connect = () => {
         const Sock = new SockJS("http://localhost:8080/ws");
         stompClient = over(Sock);
@@ -492,7 +493,7 @@ export default function CommentInPost({ openModal, funcCloseModal, post }) {
                                                             )
                                                         }
                                                     >
-                                                        View {totalSubComment}{" "}
+                                                        View {totalSubComment}
                                                         reply to the comment
                                                         <svg
                                                             xmlns="http://www.w3.org/2000/svg"

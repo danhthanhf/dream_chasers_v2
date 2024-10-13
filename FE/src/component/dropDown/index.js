@@ -71,7 +71,10 @@ function Dropdown({ elementClick, ...props }) {
                                     />
                                 </div>
                                 <div
-                                    className={clsx(styles.userName, "flex-1")}
+                                    className={clsx(
+                                        styles.userName,
+                                        "flex-1 font-semibold"
+                                    )}
                                 >
                                     <span>
                                         {user && user.firstName}
@@ -90,6 +93,7 @@ function Dropdown({ elementClick, ...props }) {
                             </div>
                         </div>
 
+                        <div className="h-px bg-gray-200" />
                         <div className="px-1 py-1 ">
                             {(user?.role === "ADMIN" ||
                                 user?.role === "MANAGER") && (
@@ -152,17 +156,11 @@ function Dropdown({ elementClick, ...props }) {
                                             {active ? (
                                                 <svg
                                                     xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
                                                     viewBox="0 0 24 24"
-                                                    strokeWidth="1.5"
-                                                    stroke="currentColor"
                                                     className="mr-2 w-6 h-6"
+                                                    stroke="white"
                                                 >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        stroklinejoin="round"
-                                                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                                                    />
+                                                    <path d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                 </svg>
                                             ) : (
                                                 <svg
@@ -185,55 +183,99 @@ function Dropdown({ elementClick, ...props }) {
                                     )}
                                 </Menu.Item>
                             </Link>
-                            {user?.role !== "ADMIN" && (
-                                <Link to={"/me/my-courses"}>
-                                    <Menu.Item>
-                                        {({ active }) => (
-                                            <button
-                                                className={`${
-                                                    active
-                                                        ? "bg-black text-white"
-                                                        : "text-gray-900"
-                                                } group flex w-full items-center rounded-md px-2 py-2.5 text-sm`}
-                                            >
-                                                {active ? (
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        strokeWidth="1.5"
-                                                        stroke="currentColor"
-                                                        className="mr-2 w-6 h-6"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            stroklinejoin="round"
-                                                            d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
-                                                        />
-                                                    </svg>
-                                                ) : (
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        strokeWidth="1.5"
-                                                        stroke="currentColor"
-                                                        className="mr-2 w-6 h-6"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            stroklinejoin="round"
-                                                            d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
-                                                        />
-                                                    </svg>
-                                                )}
-                                                My courses
-                                            </button>
-                                        )}
-                                    </Menu.Item>
-                                </Link>
-                            )}
                         </div>
+
+                        <div className="h-px bg-gray-200" />
+                        <div className="px-1 py-1">
+                            <Link to={"/me/instructor-dasboard"}>
+                                <Menu.Item>
+                                    {({ active }) => (
+                                        <button
+                                            className={`${
+                                                active
+                                                    ? "bg-black text-white"
+                                                    : "text-gray-900"
+                                            } group flex w-full items-center rounded-md px-2 py-2.5 text-sm`}
+                                        >
+                                            {active ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    strokeWidth="1.5"
+                                                    stroke="currentColor"
+                                                    className="mr-2 w-6 h-6"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        stroklinejoin="round"
+                                                        d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                    />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    strokeWidth="1.5"
+                                                    stroke="currentColor"
+                                                    className="mr-2 w-6 h-6"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        stroklinejoin="round"
+                                                        d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                    />
+                                                </svg>
+                                            )}
+                                            Instructor Dashboard
+                                        </button>
+                                    )}
+                                </Menu.Item>
+                            </Link>
+                            <Link to={"/me/my-learning"}>
+                                <Menu.Item>
+                                    {({ active }) => (
+                                        <button
+                                            className={`${
+                                                active
+                                                    ? "bg-black text-white"
+                                                    : "text-gray-900"
+                                            } group flex w-full items-center rounded-md px-2 py-2.5 text-sm`}
+                                        >
+                                            {active ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 100 100"
+                                                    className="mr-2 w-6 h-6"
+                                                    fill="#fff"
+                                                >
+                                                    <path d="M88 10H12c-3.31 0-6 2.69-6 6v58c0 3.31 2.69 6 6 6h30.05l-.67 1.69A6.852 6.852 0 0 1 35 86h-4c-1.1 0-2 .9-2 2s.9 2 2 2h38c1.1 0 2-.9 2-2s-.9-2-2-2h-4c-2.82 0-5.32-1.69-6.37-4.31L57.95 80H88c3.31 0 6-2.69 6-6V16c0-3.31-2.69-6-6-6zm-78 6c0-1.1.9-2 2-2h76c1.1 0 2 .9 2 2v50H10V16zm44.91 67.17c.42 1.04.98 1.99 1.66 2.83H43.43c.68-.84 1.24-1.79 1.66-2.83L46.35 80h7.29l1.27 3.17zM90 74c0 1.1-.9 2-2 2H12c-1.1 0-2-.9-2-2v-4h80v4z"></path>
+                                                    <path d="M76 20H54c-1.54 0-2.94.59-4 1.54A5.98 5.98 0 0 0 46 20H24c-1.1 0-2 .9-2 2v30c0 1.1.9 2 2 2h22c1.1 0 2 .9 2 2s.9 2 2 2 2-.9 2-2 .9-2 2-2h7v4c0 1.1.9 2 2 2s2-.9 2-2v-4h11c1.1 0 2-.9 2-2V22c0-1.1-.9-2-2-2zM48 50.34c-.63-.22-1.3-.34-2-.34H26V24h20c1.1 0 2 .9 2 2v24.34zM74 50H54c-.7 0-1.37.12-2 .34V26c0-1.1.9-2 2-2h20v26z"></path>
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="mr-2 w-6 h-6"
+                                                    viewBox="0 0 100 100"
+                                                    fill="black"
+                                                    strokeWidth={1.5}
+                                                >
+                                                    <path
+                                                        strokeWidth={1.5}
+                                                        d="M88 10H12c-3.31 0-6 2.69-6 6v58c0 3.31 2.69 6 6 6h30.05l-.67 1.69A6.852 6.852 0 0 1 35 86h-4c-1.1 0-2 .9-2 2s.9 2 2 2h38c1.1 0 2-.9 2-2s-.9-2-2-2h-4c-2.82 0-5.32-1.69-6.37-4.31L57.95 80H88c3.31 0 6-2.69 6-6V16c0-3.31-2.69-6-6-6zm-78 6c0-1.1.9-2 2-2h76c1.1 0 2 .9 2 2v50H10V16zm44.91 67.17c.42 1.04.98 1.99 1.66 2.83H43.43c.68-.84 1.24-1.79 1.66-2.83L46.35 80h7.29l1.27 3.17zM90 74c0 1.1-.9 2-2 2H12c-1.1 0-2-.9-2-2v-4h80v4z"
+                                                    ></path>
+                                                    <path d="M76 20H54c-1.54 0-2.94.59-4 1.54A5.98 5.98 0 0 0 46 20H24c-1.1 0-2 .9-2 2v30c0 1.1.9 2 2 2h22c1.1 0 2 .9 2 2s.9 2 2 2 2-.9 2-2 .9-2 2-2h7v4c0 1.1.9 2 2 2s2-.9 2-2v-4h11c1.1 0 2-.9 2-2V22c0-1.1-.9-2-2-2zM48 50.34c-.63-.22-1.3-.34-2-.34H26V24h20c1.1 0 2 .9 2 2v24.34zM74 50H54c-.7 0-1.37.12-2 .34V26c0-1.1.9-2 2-2h20v26z"></path>
+                                                </svg>
+                                            )}
+                                            My Learning
+                                        </button>
+                                    )}
+                                </Menu.Item>
+                            </Link>
+                        </div>
+
+                        <div className="h-px bg-gray-200" />
                         <div className="px-1 py-1 ">
                             <Link to={"/me/posts/publish"}>
                                 <Menu.Item>
@@ -281,6 +323,7 @@ function Dropdown({ elementClick, ...props }) {
                                     )}
                                 </Menu.Item>
                             </Link>
+
                             <Link to={"/new-post"}>
                                 <Menu.Item>
                                     {({ active }) => (
@@ -298,7 +341,7 @@ function Dropdown({ elementClick, ...props }) {
                                                     viewBox="0 0 24 24"
                                                     strokeWidth={1.5}
                                                     stroke="currentColor"
-                                                    className="mr-2 w-6 h-6"
+                                                    className="mr-2 w-[22px] h-[22px]"
                                                 >
                                                     <path
                                                         strokeLinecap="round"
@@ -313,7 +356,7 @@ function Dropdown({ elementClick, ...props }) {
                                                     viewBox="0 0 24 24"
                                                     strokeWidth={1.5}
                                                     stroke="currentColor"
-                                                    className="mr-2 w-6 h-6"
+                                                    className="mr-2 w-[22px] h-[22px]"
                                                 >
                                                     <path
                                                         strokeLinecap="round"
@@ -322,13 +365,11 @@ function Dropdown({ elementClick, ...props }) {
                                                     />
                                                 </svg>
                                             )}
-                                            Write Post
+                                            Pusblish Post
                                         </button>
                                     )}
                                 </Menu.Item>
                             </Link>
-                        </div>
-                        <div className="px-1 py-1 ">
                             <Link to={"/me/bookmark/posts"}>
                                 <Menu.Item>
                                     {({ active }) => (
@@ -376,6 +417,8 @@ function Dropdown({ elementClick, ...props }) {
                                 </Menu.Item>
                             </Link>
                         </div>
+
+                        <div className="h-px bg-gray-200" />
                         <div className="px-1 py-1">
                             <div onClick={handleLogout}>
                                 <Menu.Item>

@@ -4,10 +4,12 @@ import com.dreamchasers.recoverbe.dto.CourseDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.model.CourseKit.Category;
 import com.dreamchasers.recoverbe.model.CourseKit.Course;
+import com.dreamchasers.recoverbe.model.CourseKit.Section;
 import com.dreamchasers.recoverbe.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,11 @@ public class CourseService {
     private final SectionService sectionService;
     private final CategoryService categoryService;
 
+    public ResponseObject getAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        var courses = courseRepository.findAllByDeleted(false, pageable);
+        return ResponseObject.builder().status(HttpStatus.OK).content(courses).build();
+    }
 
     public ResponseObject restoreList(List<UUID> ids) {
         ids.stream().map(id -> courseRepository.findById(id).orElse( null)).forEach(c -> {
@@ -111,6 +118,7 @@ public class CourseService {
             categoryService.UpdateToTalCourseForList(categories, true);
 
             var sections = sectionService.createListSectionFromDTO(request.getSections());
+            var totalDuration = sections.stream().mapToInt(Section::getTotalDuration).sum();
 
             Course newCourse = Course.builder().price(request.getPrice())
                     .title(request.getTitle())
@@ -118,6 +126,7 @@ public class CourseService {
                     .discount(request.getDiscount())
                     .thumbnail(request.getThumbnail())
                     .video(request.getVideo())
+                    .totalDuration(totalDuration)
                     .categories(categories)
                     .sections(sections)
                     .build();

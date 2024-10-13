@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,15 +38,27 @@ public class CategoryController {
     }
 
 
-    @PutMapping("/delete/soft/{id}")
+    @DeleteMapping("/delete/soft/{id}")
     public ResponseEntity<ResponseObject> softDelete(@PathVariable UUID id) {
         var result = categoryService.softDelete(id);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/restore/{id}")
+    @DeleteMapping("/delete/soft/list")
+    public ResponseEntity<ResponseObject> softDeleteList(@RequestParam List<UUID> ids) {
+        var result = categoryService.softDeleteList(ids);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/{id}")
     public ResponseEntity<ResponseObject> restore(@PathVariable UUID id) {
         var result = categoryService.restoreCategoryById(id);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @DeleteMapping("/restore/list")
+    public ResponseEntity<ResponseObject> restoreList(@RequestParam List<UUID> ids) {
+        var result = categoryService.restoreListCategory(ids);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

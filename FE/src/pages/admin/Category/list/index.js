@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "../../Course/list/List.module.scss";
 import clsx from "clsx";
 import { toast } from "sonner";
-import * as dataApi from "../../../../api/apiService/dataService";
+import * as dataService from "../../../../api/apiService/dataService";
 import { Link } from "react-router-dom";
 import deleteIcon from "../../../../assets/images/delete.svg";
 import editIcon from "../../../../assets/images/edit.svg";
@@ -12,7 +12,7 @@ import DataGridComponent from "../../../../component/table";
 
 const selectes = [5, 10, 25];
 
-function reFormatCuorse(data) {
+function reFormat(data) {
     if (!data || data.length === 0) return [];
     return data.map((item) => {
         const create = new Date(item.createdAt);
@@ -30,14 +30,21 @@ function reFormatCuorse(data) {
 
 function ListCategory() {
     const [categories, setCategories] = useState([]);
-    const [deletedModalOpen, setDeletedModalOpen] = useState(false);
-    const [deleteId, setDeleteId] = useState(null);
     const [totalData, setTotalData] = useState(0);
+    const [selectedRow, setSelectedRow] = useState([]);
     const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [render, setRender] = useState();
-
+    const [modalContent, setModalContent] = useState({
+        title: "DELETE",
+        description: "Are you sure want to delete?",
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
     const columns = [
         {
             field: "category",
@@ -90,7 +97,6 @@ function ListCategory() {
             width: 160,
             type: "actions",
             renderCell: (params) => {
-                console.log(params);
                 return (
                     <div
                         className={clsx(
@@ -103,7 +109,17 @@ function ListCategory() {
                                 <img src={editIcon} alt="" />
                             </Link>
                             <button
-                                onClick={() => openDeleteModal(params.value)}
+                                onClick={() => {
+                                    setModalContent({
+                                        ...modalContent,
+                                        title: "DELETE",
+                                        isOpen: true,
+                                        description:
+                                            "Are you sure want to delete",
+                                        handleRemove: () =>
+                                            handleRemoveCategory(params.value),
+                                    });
+                                }}
                             >
                                 <img
                                     src={deleteIcon}
@@ -118,11 +134,30 @@ function ListCategory() {
         },
     ];
 
-    const handleRemoveCategory = () => {
-        toast.promise(dataApi.softDeleteCategoryById(deleteId), {
+    const handleRemoveListCategory = async () => {
+        toast.promise(dataService.softDeleteListCategory(selectedRow), {
             loading: "Removing...",
             success: () => {
-                setDeletedModalOpen(false);
+                setRender(!render);
+                setModalContent({ ...modalContent, isOpen: false });
+                return "Remove successfully.";
+            },
+            error: (error) => {
+                console.log(error);
+                return error.message;
+            },
+        });
+    };
+
+    const handleRowSelection = (selectionModel) => {
+        setSelectedRow(selectionModel);
+    };
+
+    const handleRemoveCategory = (deleteId) => {
+        toast.promise(dataService.softDeleteCategoryById(deleteId), {
+            loading: "Removing...",
+            success: () => {
+                setModalContent({ ...modalContent, isOpen: false });
                 setRender(!render);
                 return "Remove successfully";
             },
@@ -137,7 +172,7 @@ function ListCategory() {
 
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getCategoryByTitle(
+                const result = await dataService.getCategoryByTitle(
                     e.target.value,
                     page,
                     selected
@@ -170,20 +205,20 @@ function ListCategory() {
         };
     };
 
-    const handleCloseModal = () => {
-        setDeletedModalOpen(false);
-    };
-
     const openDeleteModal = (id) => {
-        setDeleteId(id);
-        setDeletedModalOpen(true);
+        setModalContent({
+            ...modalContent,
+            isOpen: true,
+            handleRemove: handleRemoveListCategory,
+            description: `Are you sure want to delete ${selectedRow.length} user?`,
+        });
     };
 
     useEffect(() => {
         setIsLoadingData(true);
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategories(
+                const result = await dataService.getAllCategories(
                     false,
                     page,
                     selected
@@ -234,20 +269,40 @@ function ListCategory() {
                         </div>
                     </div>
 
-                    <div className="formGroup flex flex-col gap-3">
+                    <div className="formGroup flex flex-col gap-3 justify-center">
                         <div
                             className={clsx(
                                 styles.contentMain,
-                                "flex justify-between"
+                                "flex justify-between items-center"
                             )}
                         >
-                            <div className={clsx(styles.contentItem)}></div>
+                            <div
+                                className={clsx(
+                                    "w-[160px] h-full flex items-center gap-1 cursor-pointer hover:opacity-70"
+                                )}
+                                onClick={openDeleteModal}
+                            >
+                                {selectedRow.length > 0 && (
+                                    <>
+                                        <button type="button">
+                                            <img
+                                                src={deleteIcon}
+                                                alt=""
+                                                className="w-5 h-5"
+                                            />
+                                        </button>
+                                        <span className="text-xs font-semibold text-[#ff5630]">
+                                            Delete ({selectedRow.length})
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                             <div
                                 className={clsx(styles.contentItem, "flex-1 ")}
                             >
                                 <div
                                     id="seachWrap"
-                                    className={clsx(styles.search, "mr-4")}
+                                    className={clsx(styles.search)}
                                 >
                                     <input
                                         onChange={handleSearchInputChange}
@@ -261,13 +316,14 @@ function ListCategory() {
                         <div>
                             <DataGridComponent
                                 columns={columns}
-                                rows={reFormatCuorse(categories)}
+                                rows={reFormat(categories)}
                                 totalElements={totalData}
                                 isLoading={isLoadingData}
                                 paginationModel={{
                                     pageSize: selected,
                                     page: page,
                                 }}
+                                handleRowSelection={handleRowSelection}
                                 setPaginationModel={handlePageData}
                             ></DataGridComponent>
                         </div>
@@ -275,11 +331,11 @@ function ListCategory() {
                 </div>
             </div>
             <Modal
-                isOpen={deletedModalOpen}
-                closeModal={handleCloseModal}
-                title={"Delete"}
-                description={"Are you sure want to delete?"}
-                handleRemove={handleRemoveCategory}
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                title={modalContent.title}
+                description={modalContent.description}
+                handleRemove={modalContent.handleRemove}
             ></Modal>
         </div>
     );

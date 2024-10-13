@@ -33,12 +33,11 @@ export default function Header() {
         if (!user) return;
         const fetchApi = async () => {
             try {
-                const result = await userApi.getAllNotification(user.email);
-                if (result.content.content.length > 0) {
-                    dispatch(
-                        notificationSlice.actions.init(result.content.content)
-                    );
-                }
+                const result = await userApi.getAllNotification(user.email, {
+                    page: 0,
+                    size: 5,
+                });
+                dispatch(notificationSlice.actions.init(result));
             } catch (error) {
                 console.log(error);
             }
@@ -58,15 +57,14 @@ export default function Header() {
         navigate("/login");
     };
     return (
-        !isAdmin && (
-            <div className="z-9999 relative w-full flex justify-center">
-                <div className="xl:w-[1400px] w-full fixed shrink-0  md:w-full h-10 bg-black rounded-t-md sm:w-full z-50"></div>
-                <header
+        <div className="z-50 relative">
+            <div className=" flex justify-center">
+                <div
                     className={clsx(
-                        ` ${styles.boxShadow} xl:w-[1400px] px-4 w-full md:w-full md:px-8 rounded-b-xl z-header sm:w-full bg-white mt-10 items-center fixed flex gap-5 justify-between lg:px-16 sm:px-8 pt-2.5 pb-2.5 text-sm leading-5 border-b border-gray-100 border-solid `
+                        `z-50 ${styles.boxShadow} px-4 md:px-8 rounded-b-xl bg-custom z-header sm:w-full items-center fixed flex gap-5 justify-between lg:px-16 sm:px-8 py-2.5 text-sm leading-5 border-b border-gray-100 border-solid  lg:w-[1200px] `
                     )}
                 >
-                    <div className="flex gap-5 justify-between self-start text-neutral-800">
+                    <div className="flex  gap-5 justify-between self-start text-neutral-800">
                         <Link to="/">
                             <img
                                 loading="lazy"
@@ -168,8 +166,8 @@ export default function Header() {
                             </>
                         )}
                     </div>
-                </header>
+                </div>
             </div>
-        )
+        </div>
     );
 }

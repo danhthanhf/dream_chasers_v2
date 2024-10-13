@@ -6,6 +6,7 @@ import com.dreamchasers.recoverbe.dto.UserDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.jwt.JwtService;
+import com.dreamchasers.recoverbe.model.Post.Post;
 import com.dreamchasers.recoverbe.model.User.Role;
 import com.dreamchasers.recoverbe.model.User.User;
 import com.dreamchasers.recoverbe.repository.UserRepository;
@@ -15,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Transient;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +35,19 @@ public class UserService {
     private final JwtService jwtService;
     private final CloudinaryService cloudinaryService;
 
+
+    public void Save(User user) {
+        userRepository.save(user);
+    }
+
+    public boolean isPostFavorite(String email, Post post) {
+        User user = (User) getUserByEmail(email).getContent();
+        if (user == null) {
+            return false;
+        }
+        return user.getFavoritePosts().contains(post);
+    }
+
     public ResponseObject softDeleteListUser(List<UUID> ids) {
         var users = ids.stream().map(id -> userRepository.findById(id).orElse(null)).toList();
         ResponseObject[] res = new ResponseObject[1];
@@ -51,6 +64,7 @@ public class UserService {
             return res[0];
         }
         userRepository.saveAll(users);
+        res[0] = ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
         return res[0];
     }
 
@@ -148,7 +162,7 @@ public class UserService {
     }
 
     public ResponseObject resetPassword(AuthenticationRequest request) {
-        var user = findUserByEmail(request.getEmail());
+        var user = findByEmail(request.getEmail());
         if(user == null) return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email không tồn tại!").build();
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user = userRepository.save(user);
@@ -162,7 +176,6 @@ public class UserService {
         }
 
         User user = (User) response.getContent();
-        System.out.println(user.getRole());
         if (Objects.equals(user.getRole(), Role.ADMIN) || user.getRole() == Role.MANAGER)
             return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("This user cannot be deleted.").build();
         user.setDeleted(true);
@@ -200,7 +213,7 @@ public class UserService {
         return ResponseObject.builder().status(HttpStatus.OK).content(user).build();
     }
 
-    public User findUserByEmail(String email) {
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
 

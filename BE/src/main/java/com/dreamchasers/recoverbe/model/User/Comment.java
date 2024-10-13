@@ -6,6 +6,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
 
+import java.util.List;
+import java.util.UUID;
+
 @Entity
 @Getter
 @Setter
@@ -15,18 +18,19 @@ import net.minidev.json.annotate.JsonIgnore;
 public class Comment extends BaseModel {
     @Column(columnDefinition = "TEXT")
     private String content;
-    private String userEmail;
-    private String userName;
-    private String avatar;
-    private int parentId;
-    private String replyToUser;
-    private String replyToUserName;
+
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "parent_id")
+    private Comment parentComment;
+
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> replies;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
-    private User user;
+    private User author;
 
-    @OneToOne
-    private Comment parentComment;
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    private User repliedUser;
 }

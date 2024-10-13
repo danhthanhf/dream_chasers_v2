@@ -2,7 +2,7 @@ package com.dreamchasers.recoverbe.model.CourseKit;
 
 import com.dreamchasers.recoverbe.helper.Model.BaseModel;
 import com.dreamchasers.recoverbe.model.User.Comment;
-import jakarta.persistence.Column;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import lombok.*;
@@ -22,6 +22,6 @@ public class Lesson extends BaseModel {
     private String description;
     private int duration;
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL)
     private List<Comment> comments = new ArrayList<>();
 }

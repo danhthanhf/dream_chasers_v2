@@ -24,26 +24,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @RequiredArgsConstructor
-@EnableGlobalMethodSecurity(
-        prePostEnabled = true,
-        securedEnabled = true,
-        jsr250Enabled = true)
 public class SecurityConfig {
     private final JwtFilter jwtFilter;
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
     @Bean
     public AccessDeniedHandler accessDeniedHandler () {
-        return (request, response, accessDeniedException) -> {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        };
+        return (request, response, accessDeniedException) -> response.setStatus(HttpServletResponse.SC_FORBIDDEN);
     }
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request, response, authenticationEntryPointException) -> {
-          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        };
+        return (request, response, authenticationEntryPointException) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     }
 
     @Bean

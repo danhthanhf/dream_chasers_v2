@@ -7,7 +7,6 @@ const loginSlice = createSlice({
         user: sessionStorage.getItem("user")
             ? JSON.parse(sessionStorage.getItem("user"))
             : null,
-
         token: sessionStorage.getItem("token"),
     },
     reducers: {

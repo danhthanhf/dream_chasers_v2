@@ -4,9 +4,10 @@ import * as UserApi from "../../api/apiService/authService";
 import { useSelector } from "react-redux";
 import moment from "moment/moment";
 import { Link } from "react-router-dom";
-import { Dropdown } from "../../pages/Post/ViewPost";
 import Modal from "../modal";
 import { toast } from "sonner";
+import { Dropdown } from "../../pages/Post/ViewPost";
+import { Button } from "@nextui-org/button";
 
 const PostItem = ({
     handleRemoveBookmark,
@@ -178,68 +179,74 @@ function LayOutMyPost({ page = "MY_POST", children }) {
     };
 
     return (
-        <div className="container mt-10">
-            <h1 className="uppercase font-bold text-3xl mb-10">
-                {page === "MY_POST" ? "My Post" : "Bookmark"}
-            </h1>
-            <div className="border-b-[1px] border-b-gray-200 mb-4">
-                {page === "MY_POST" && (
-                    <div className="flex">
-                        <span
-                            onClick={() => setIsDeleted(false)}
-                            className={clsx(
-                                " cursor-pointer font-semibold text-base py-3 px-3 transition-all ease duration-100 text-gray-500",
-                                {
-                                    "text-black border-b-black border-b-2":
-                                        !isDeleted,
-                                }
-                            )}
-                        >
-                            Published
-                        </span>
-                        <span
-                            onClick={() => setIsDeleted(true)}
-                            className={clsx(
-                                " cursor-pointer font-semibold text-base py-3 px-3 transition-all ease duration-100 text-gray-500",
-                                {
-                                    "text-black border-b-black border-b-2":
-                                        isDeleted,
-                                }
-                            )}
-                        >
-                            History Deleted
-                        </span>
-                    </div>
-                )}
+        <>
+            <div className={clsx("bg-[#2d2f31] text-white pt-12 pb-5")}>
+                <div className="container">
+                    <h1 className={clsx("uppercase font-extrabold")}>
+                        {page === "MY_POST" ? "My Post" : "Bookmark"}
+                    </h1>
+                </div>
             </div>
-            <div className="flex flex-col gap-3">
-                {children}
-                {posts?.map((post, index) => {
-                    return (
-                        <PostItem
-                            handleRemoveBookmark={handleRemoveBookmark}
-                            page={page}
-                            handleRestorePost={handleRestorePost}
-                            openDeleteModal={openDeleteModal}
-                            post={post}
-                            key={index}
-                        ></PostItem>
-                    );
-                })}
-                {posts?.length === 0 && (
-                    <span className="flex justify-center text-lg font-medium">
-                        You don't have any post yet
-                    </span>
-                )}
+            <div className="container">
+                <div className="border-b-[1px] border-b-gray-200 mb-4">
+                    {page === "MY_POST" && (
+                        <div className="flex">
+                            <Button
+                                onClick={() => setIsDeleted(false)}
+                                className={clsx(
+                                    "bg-white cursor-pointer rounded-none transition-all delay-100 ease-in min-w-52 font-semibold text-base py-3 h-full px-3 text-gray-500",
+                                    {
+                                        "text-black border-b-black border-b-2":
+                                            !isDeleted,
+                                    }
+                                )}
+                            >
+                                Published
+                            </Button>
+                            <Button
+                                onClick={() => setIsDeleted(true)}
+                                className={clsx(
+                                    "bg-white cursor-pointer rounded-none min-w-52 transition-all delay-100 ease-in font-semibold text-base py-3 h-full px-3 text-gray-500",
+                                    {
+                                        "text-black border-b-black border-b-2":
+                                            isDeleted,
+                                    }
+                                )}
+                            >
+                                History Deleted
+                            </Button>
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col gap-3">
+                    {children}
+                    {posts?.map((post, index) => {
+                        return (
+                            <PostItem
+                                handleRemoveBookmark={handleRemoveBookmark}
+                                page={page}
+                                handleRestorePost={handleRestorePost}
+                                openDeleteModal={openDeleteModal}
+                                post={post}
+                                key={index}
+                            ></PostItem>
+                        );
+                    })}
+                    {posts?.length === 0 && (
+                        <span className="flex justify-center text-lg font-medium">
+                            You don't have any post yet
+                        </span>
+                    )}
+                </div>
+                <Modal
+                    isOpen={deletedModalOpen}
+                    closeModal={closeDeleteModal}
+                    title={"Delete"}
+                    description={"Are you sure want to delete this post?"}
+                    handleRemove={handleRemovePost}
+                ></Modal>
             </div>
-            <Modal
-                isOpen={deletedModalOpen}
-                closeModal={closeDeleteModal}
-                title={"Delete"}
-                description={"Are you sure want to delete this post?"}
-                handleRemove={handleRemovePost}
-            ></Modal>
-        </div>
+        </>
     );
 }
 

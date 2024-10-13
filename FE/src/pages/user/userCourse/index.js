@@ -1,5 +1,4 @@
 import React, { memo, useEffect, useState } from "react";
-import styles from "./UserCourses.module.scss";
 import clsx from "clsx";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
@@ -68,15 +67,15 @@ const MyCourses = () => {
     }, []);
 
     return (
-        <div className={clsx("bg-neutral-100")}>
-            <div className={clsx(styles.header)}>
+        <div>
+            <div className={clsx("bg-[#2d2f31] text-white pt-12 pb-5")}>
                 <div className="container">
                     <h1 className={clsx("uppercase font-extrabold")}>
-                        My courses
+                        My Learning
                     </h1>
                 </div>
             </div>
-            <div className={clsx(styles.wrapContent, "container mt-6")}>
+            <div className={clsx("container mt-6")}>
                 <div className="row">
                     {courses?.length > 0 ? (
                         courses.map((course, ind) => (
@@ -87,13 +86,12 @@ const MyCourses = () => {
                             />
                         ))
                     ) : (
-                        <div className="font-base font-semibold">
+                        <div className="text-lg font-semibold">
                             You have not enroll for any courses yet
                         </div>
                     )}
                 </div>
             </div>
-            <Footer />
         </div>
     );
 };

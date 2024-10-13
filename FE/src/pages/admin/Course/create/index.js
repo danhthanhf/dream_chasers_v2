@@ -1,12 +1,16 @@
+import React from "react";
+import ReactPlayer from "react-player";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 import MultiSelect from "../../../../component/select/MultiSelectComponent";
 import styles from "./CreateCourse.module.scss";
 import clsx from "clsx";
 import fileSelect from "../../../../assets/images/fileSelect.svg";
 import { useEffect, useState } from "react";
-import * as DataApi from "../../../../api/apiService/dataService";
+import * as dataService from "../../../../api/apiService/dataService";
 import { toast } from "sonner";
 import btnClose from "../../../../assets/images/btnClose.svg";
+import ReactQuill from "react-quill";
 
 const initFormData = {
     title: "",
@@ -39,7 +43,7 @@ function CreateCourse() {
     const handleFileChange = (e, index, indexSection) => {
         const file = e.target.files[0];
         setIsUploading(true);
-        toast.promise(DataApi.uploadFile(file), {
+        toast.promise(dataService.uploadFile(file), {
             loading: "Loading file...",
             success: (result) => {
                 setIsUploading(false);
@@ -87,10 +91,11 @@ function CreateCourse() {
     };
     const handleUpdateVideoCourse = (e) => {
         setIsUploading((prev) => true);
-        toast.promise(DataApi.uploadFile(e.target.files[0]), {
+        toast.promise(dataService.uploadFile(e.target.files[0]), {
             loading: "Loading video...",
             success: (result) => {
                 setIsUploading((prev) => false);
+                console.log(result.content);
                 setFormData((prev) => {
                     return { ...prev, video: result.content };
                 });
@@ -205,15 +210,6 @@ function CreateCourse() {
     const handleRemoveVideoCourse = (e) => {
         setFormData({ ...formData, video: null });
     };
-    const panelFooterTemplate = () => {
-        const length = tagSelected ? tagSelected.length : 0;
-
-        return (
-            <div className="py-2 px-3">
-                <b>{length}</b> item{length > 1 ? "s" : ""} selected.
-            </div>
-        );
-    };
 
     const validateForm = (formData) => {
         const errors = {};
@@ -264,7 +260,7 @@ function CreateCourse() {
         }
 
         const featchApi = async () => {
-            toast.promise(DataApi.createCourse(formData), {
+            toast.promise(dataService.createCourse(formData), {
                 loading: "Loading...",
                 success: () => {
                     setFormData(initFormData);
@@ -279,11 +275,14 @@ function CreateCourse() {
         const debounceApi = debounce(featchApi);
         debounceApi();
     };
-
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await DataApi.getAllCategories(false, 0, 999999);
+                const result = await dataService.getAllCategories(
+                    false,
+                    0,
+                    999999
+                );
                 setOptions(result.content.map((cate) => cate.name));
             } catch (error) {
                 console.log(error.mess);
@@ -291,6 +290,23 @@ function CreateCourse() {
         };
         fetchApi();
     }, []);
+
+    const updateDuration = (e, lesson, sectionIndex) => {
+        var sectionUpdate = { ...formData.sections[sectionIndex] };
+        sectionUpdate.lessons = sectionUpdate.lessons.map((l) => {
+            if (l.title === lesson.title) {
+                return { ...l, duration: e };
+            }
+            return l;
+        });
+        const sectionsUpdates = [...formData.sections];
+        sectionsUpdates[sectionIndex] = sectionUpdate;
+        setFormData((prev) => {
+            return { ...prev, sections: [...sectionsUpdates] };
+        });
+    };
+
+    console.log(formData);
 
     return (
         <>
@@ -313,7 +329,9 @@ function CreateCourse() {
                                 className={clsx(styles.formInput)}
                                 type="text"
                             />
-                            <label className={clsx(styles.formLabel)}>
+                            <label
+                                className={clsx(styles.formLabel, "text-black")}
+                            >
                                 Course Name
                             </label>
                             {errors.title && (
@@ -323,21 +341,33 @@ function CreateCourse() {
                             )}
                         </div>
                         <div className={clsx(styles.formField)}>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                className={clsx(styles.formInput, "h-22")}
-                                type="text"
-                            />
-                            <label
-                                className={clsx(
-                                    styles.formLabel,
-                                    styles.descInput
-                                )}
-                            >
-                                Description
-                            </label>
+                            <div className="mt-2.5">
+                                <label
+                                    className={clsx(
+                                        "text-black ml-0 font-semibold  text-sm pb-2"
+                                    )}
+                                >
+                                    Description
+                                </label>
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formData.description || ""}
+                                    onChange={(
+                                        content,
+                                        delta,
+                                        source,
+                                        editor
+                                    ) => {
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            description: content,
+                                        }));
+                                    }}
+                                    modules={toolbar}
+                                    formats={formats}
+                                ></ReactQuill>
+                            </div>
+
                             {errors.description && (
                                 <div className="text-red-500 mt-1 text-sm ml-1">
                                     {errors.description}
@@ -356,7 +386,12 @@ function CreateCourse() {
                                     maxValues={3}
                                 />
 
-                                <label className={clsx(styles.formLabel)}>
+                                <label
+                                    className={clsx(
+                                        styles.formLabel,
+                                        "text-black"
+                                    )}
+                                >
                                     Category
                                 </label>
                                 {errors.categories && (
@@ -384,6 +419,7 @@ function CreateCourse() {
                                 )}
                             </div>
                         </div>
+
                         <div className="flex overflow-hidden">
                             <div
                                 className={clsx(
@@ -401,7 +437,7 @@ function CreateCourse() {
                                         styles.labelFile
                                     )}
                                 >
-                                    <div className={clsx(styles.iconFile)}>
+                                    <div>
                                         <img src={fileSelect} alt="" />
                                     </div>
                                 </label>
@@ -448,7 +484,8 @@ function CreateCourse() {
                                 )}
                             </div>
                         </div>
-                        <div className="flex  overflow-hidden">
+
+                        <div className="flex gap-3 overflow-hidden">
                             <div
                                 className={clsx(
                                     styles.formField,
@@ -463,13 +500,18 @@ function CreateCourse() {
                                     className={clsx(
                                         styles.formLabel2,
                                         styles.labelFile,
-                                        "h-full"
+                                        "h-[250px]"
                                     )}
                                 >
-                                    <div className={clsx(styles.iconFile)}>
-                                        <img src={fileSelect} alt="" />
+                                    <div>
+                                        <img
+                                            className="h-full"
+                                            src={fileSelect}
+                                            alt=""
+                                        />
                                     </div>
                                 </label>
+
                                 <input
                                     name="video"
                                     onChange={handleUpdateVideoCourse}
@@ -480,23 +522,26 @@ function CreateCourse() {
                                 />
                             </div>
                             <div
-                                className={clsx(
-                                    styles.formField,
-                                    "w-1/2 mt-8 ml-9"
-                                )}
+                                className={clsx(styles.formField, "w-1/2 mt-8")}
                             >
                                 {formData.video && (
                                     <div className={clsx(styles.videoField)}>
-                                        <video
-                                            id="video"
+                                        <ReactPlayer
+                                            url={formData.video}
                                             controls
-                                            className="rounded-lg"
-                                        >
-                                            <source
-                                                src={formData.video}
-                                                type="video/mp4"
-                                            />
-                                        </video>
+                                            width="100%"
+                                            onDuration={(e) =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    duration: e,
+                                                }))
+                                            }
+                                            height="250px"
+                                            style={{
+                                                borderRadius: "8px",
+                                                overflow: "hidden",
+                                            }}
+                                        ></ReactPlayer>
                                         <button
                                             className={clsx(
                                                 styles.btnClosePreview
@@ -745,18 +790,30 @@ function CreateCourse() {
                                                                                         styles.videoField
                                                                                     )}
                                                                                 >
-                                                                                    <video
-                                                                                        id="video"
+                                                                                    <ReactPlayer
+                                                                                        url={
+                                                                                            lesson.video
+                                                                                        }
                                                                                         controls
-                                                                                        className="rounded-lg"
-                                                                                    >
-                                                                                        <source
-                                                                                            src={
-                                                                                                lesson.video
-                                                                                            }
-                                                                                            type="video/mp4"
-                                                                                        />
-                                                                                    </video>
+                                                                                        width="100%"
+                                                                                        onDuration={(
+                                                                                            e
+                                                                                        ) =>
+                                                                                            updateDuration(
+                                                                                                e,
+                                                                                                lesson,
+                                                                                                sectionIndex
+                                                                                            )
+                                                                                        }
+                                                                                        height="250px"
+                                                                                        style={{
+                                                                                            borderRadius:
+                                                                                                "8px",
+                                                                                            overflow:
+                                                                                                "hidden",
+                                                                                        }}
+                                                                                    ></ReactPlayer>
+
                                                                                     <button
                                                                                         className={clsx(
                                                                                             styles.btnClosePreview
@@ -784,72 +841,6 @@ function CreateCourse() {
                                                                             )}
                                                                         </div>
                                                                     </div>
-                                                                    <div
-                                                                        className={clsx(
-                                                                            styles.formField
-                                                                        )}
-                                                                    >
-                                                                        <input
-                                                                            name="linkVideo"
-                                                                            value={
-                                                                                lesson.linkVideo
-                                                                            }
-                                                                            onChange={(
-                                                                                e
-                                                                            ) => {
-                                                                                handleInputLessonChange(
-                                                                                    e,
-                                                                                    index,
-                                                                                    sectionIndex
-                                                                                );
-                                                                            }}
-                                                                            className={clsx(
-                                                                                styles.formInput
-                                                                            )}
-                                                                            type="text"
-                                                                        />
-                                                                        <label
-                                                                            className={clsx(
-                                                                                styles.formLabel
-                                                                            )}
-                                                                        >
-                                                                            Link
-                                                                            Video
-                                                                        </label>
-                                                                    </div>
-
-                                                                    {/* <div
-                                                                        className={clsx(
-                                                                            styles.formField
-                                                                        )}
-                                                                    >
-                                                                        <input
-                                                                            name="duration"
-                                                                            value={
-                                                                                lesson.duration
-                                                                            }
-                                                                            onChange={(
-                                                                                e
-                                                                            ) => {
-                                                                                handleInputLessonChange(
-                                                                                    e,
-                                                                                    index,
-                                                                                    sectionIndex
-                                                                                );
-                                                                            }}
-                                                                            className={clsx(
-                                                                                styles.formInput
-                                                                            )}
-                                                                            type="time"
-                                                                        />
-                                                                        <label
-                                                                            className={clsx(
-                                                                                styles.formLabel
-                                                                            )}
-                                                                        >
-                                                                            Duration
-                                                                        </label>
-                                                                    </div> */}
                                                                 </div>
                                                             );
                                                         }
@@ -893,3 +884,38 @@ function CreateCourse() {
 }
 
 export default CreateCourse;
+const toolbar = {
+    toolbar: {
+        container: [
+            [{ header: "1" }, { header: "2" }],
+            [{ size: [] }],
+            ["bold", "italic", "underline", "strike"],
+            [
+                { list: "ordered" },
+                { list: "bullet" },
+                { indent: "-1" },
+                { indent: "+1" },
+            ],
+            ["link", "image"],
+            ["clean"],
+        ],
+    },
+    clipboard: {
+        matchVisual: false,
+    },
+};
+
+const formats = [
+    "header",
+    "size",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "list",
+    "bullet",
+    "indent",
+    "link",
+    "image",
+    "imageBlot",
+];

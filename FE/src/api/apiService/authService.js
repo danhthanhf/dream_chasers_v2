@@ -4,6 +4,25 @@ import publicInstance, {
     userInstance,
 } from "../instance";
 
+export const getAllUnread = async (email, pagination) => {
+    try {
+        const result = await userInstance.get(
+            `/notification/${email}/getAllUnread?page=${pagination.page}&size=${pagination.size}`
+        );
+        return result.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const toggleLikePost = async (postId, email) => {
+    try {
+        return await userInstance.put(`/${email}/post/like/${postId}`);
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const restoreListUser = async (ids) => {
     try {
         const result = await privateInstance.delete(`/user/restore/list`, {
@@ -325,13 +344,14 @@ export const updateLessonIds = async (alias, courseId, lessonIds) => {
     }
 };
 
-export const getAllNotification = async (email, page = "0", size = "5") => {
+export const getAllNotification = async (email, pagination) => {
     try {
-        return await userInstance.get(
-            `/${encodeURIComponent(
-                email
-            )}/notification/getAll?page=${page}&size=${size}`
+        const result = await userInstance.get(
+            `notification/${encodeURIComponent(email)}/getAll?page=${
+                pagination.page
+            }&size=${pagination.size}`
         );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -342,7 +362,7 @@ export const readNotification = async (email, id) => {
         email = email.substring(0, email.lastIndexOf("@"));
     }
     try {
-        return await userInstance.put(`${email}/notification/read/${id}`);
+        return await userInstance.put(`notification/${email}/read/${id}`);
     } catch (error) {
         return Promise.reject(error);
     }
@@ -352,17 +372,16 @@ export const readAllNotifications = async (email) => {
         email = email.substring(0, email.lastIndexOf("@"));
     }
     try {
-        return await userInstance.put(`${email}/notification/readAll`);
+        return await userInstance.put(`notification/${email}/readAll`);
     } catch (error) {
         return Promise.reject(error);
     }
 };
 export const removeAllNotifications = async (email) => {
-    if (email.includes("@")) {
-        email = email.substring(0, email.lastIndexOf("@"));
-    }
     try {
-        return await userInstance.delete(`/${email}/notification/removeAll`);
+        return await userInstance.delete(
+            `notification/${encodeURIComponent(email)}/removeAll`
+        );
     } catch (error) {
         return Promise.reject(error);
     }

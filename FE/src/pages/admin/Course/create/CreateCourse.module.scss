@@ -20,7 +20,7 @@
         font-weight: 600;
         font-size: 14px;
         background-color: white;
-        color: rgb(33, 43, 54);
+        color: black;
     }
 
     &:focus + .formLabel.descInput {
@@ -52,7 +52,7 @@
     font-size: 15px;
     background-color: rgb(255, 255, 255);
     user-select: none;
-    color: $label-gray;
+    color: black;
     // transition: 200ms cubic-bezier(0, 0, 0.2, 1) 0ms,
     //     transform 200ms cubic-bezier(0, 0, 0.2, 1) 0ms,
     //     max-width 200ms cubic-bezier(0, 0, 0.2, 1) 0ms;
@@ -74,7 +74,6 @@
 
 .formLabel2 {
     margin: 0px;
-    // height: 100%;
     font-weight: 600;
     line-height: 1.57143;
     font-size: 14px;
@@ -84,7 +83,9 @@
 .labelFile {
     justify-content: center;
     display: flex;
+    height: 250px;
     padding: 40px;
+    align-items: center;
     outline: none;
     border-radius: 8px;
     cursor: pointer;

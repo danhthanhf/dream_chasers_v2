@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "../../Course/list/List.module.scss";
 import clsx from "clsx";
 import { toast } from "sonner";
 import * as dataApi from "../../../../api/apiService/dataService";
 import restoreIcon from "../../../../assets/images/restore.svg";
 import DataGridComponent from "../../../../component/table";
-
+import Modal from "../../../../component/modal";
 const selectes = [5, 10, 25];
 
-function reFormatCuorse(data) {
+function reFormat(data) {
     if (!data || data.length === 0) return [];
     return data.map((item) => {
         const create = new Date(item.createdAt);
@@ -27,12 +27,21 @@ function reFormatCuorse(data) {
 function HistoryDeletedCategory() {
     const [categories, setCategories] = useState([]);
     const [totalData, setTotalData] = useState(0);
+    const [selectedRow, setSelectedRow] = useState([]);
     const [selected, setSelected] = useState(selectes[0]);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [page, setPage] = useState(0);
     const [render, setRender] = useState();
     const [searchName, setSearchName] = useState();
-    const firstRender = useRef(true);
+    const [modalContent, setModalContent] = useState({
+        title: "RESTORE",
+        description: "Are you sure want to restore?",
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
 
     const columns = [
         {
@@ -191,6 +200,34 @@ function HistoryDeletedCategory() {
         fetchApi();
     }, [page, selected, render]);
 
+    const handleRowSelection = (selectionModel) => {
+        setSelectedRow(selectionModel);
+    };
+
+    const handleRemoveListCategory = async () => {
+        toast.promise(dataApi.restoreListCategory(selectedRow), {
+            loading: "Restoring...",
+            success: () => {
+                setRender(!render);
+                setModalContent({ ...modalContent, isOpen: false });
+                return "Restore successfully";
+            },
+            error: (error) => {
+                console.log(error);
+                return error.message;
+            },
+        });
+    };
+
+    const openDeleteModal = (id) => {
+        setModalContent({
+            ...modalContent,
+            isOpen: true,
+            handleRemove: handleRemoveListCategory,
+            description: `Are you sure want to delete ${selectedRow.length} user?`,
+        });
+    };
+
     return (
         <div className="flex justify-center w-full ">
             <div className="container mt-4 mx-14">
@@ -206,10 +243,30 @@ function HistoryDeletedCategory() {
                         <div
                             className={clsx(
                                 styles.contentMain,
-                                "flex justify-between"
+                                "flex justify-between items-center"
                             )}
                         >
-                            <div className={clsx(styles.contentItem)}></div>
+                            <div
+                                className={clsx(
+                                    "w-[160px] h-full flex items-center gap-1 cursor-pointer hover:opacity-70"
+                                )}
+                                onClick={openDeleteModal}
+                            >
+                                {selectedRow.length > 0 && (
+                                    <>
+                                        <button type="button">
+                                            <img
+                                                src={restoreIcon}
+                                                alt=""
+                                                className="w-5 h-5"
+                                            />
+                                        </button>
+                                        <span className="text-xs font-semibold text-[#22c55e]">
+                                            Restore ({selectedRow.length})
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                             <div className={clsx(styles.contentItem, "flex-1")}>
                                 <div
                                     id="seachWrap"
@@ -228,19 +285,27 @@ function HistoryDeletedCategory() {
                         <div>
                             <DataGridComponent
                                 columns={columns}
-                                rows={reFormatCuorse(categories)}
+                                rows={reFormat(categories)}
                                 totalElements={totalData}
                                 isLoading={isLoadingData}
                                 paginationModel={{
                                     pageSize: selected,
                                     page: page,
                                 }}
+                                handleRowSelection={handleRowSelection}
                                 setPaginationModel={handlePageData}
                             ></DataGridComponent>
                         </div>
                     </div>
                 </div>
             </div>
+            <Modal
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                title={modalContent.title}
+                description={modalContent.description}
+                handleRemove={modalContent.handleRemove}
+            ></Modal>
         </div>
     );
 }

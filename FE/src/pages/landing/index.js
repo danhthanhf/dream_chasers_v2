@@ -1,14 +1,18 @@
-import * as React from "react";
-import CourseSection from "../../component/ladingComponent/CourseSection.js";
 import CourseCard from "../../component/ladingComponent/CourseCard.js";
 import SlideShow from "../../component/ladingComponent/SlideShow.js";
-import Footer from "../../layout/footer/index.js";
 import loginSlice from "../../redux/reducers/loginSlice.js";
 import { useDispatch } from "react-redux";
+import * as dataService from "../../api/apiService/dataService.js";
+import { useEffect, useState } from "react";
+import PostItem from "../../component/PostItem.js";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { A11y, Navigation, Pagination, Scrollbar } from "swiper/modules";
+import Ink from "react-ink";
 
 function LandingPageComponent() {
     const dispatch = useDispatch();
-    React.useEffect(() => {
+    const [posts, setPosts] = useState([]);
+    useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const token = params.get("token");
         const lastName = params.get("lastName");
@@ -27,20 +31,97 @@ function LandingPageComponent() {
                 })
             );
         }
-    }, []);
+        const fetchApi = async () => {
+            try {
+                const result = await dataService.getPosts(0, 8);
+
+                setPosts(result.posts);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        fetchApi();
+    }, [dispatch]);
+
     return (
-        <div className="flex flex-col items-center pt-5 bg-neutral-100">
+        <div className="flex flex-col items-center pt-5 bg-white">
             <main className="w-full">
-                <div className="relative mx-auto max-w-screen-xl overflow-hidden my-4 rounded-xl max-sm:px-3 md:px-6">
+                <section className="p-4 sm:px-5 sm:py-10 mx-auto lg:max-w-[1200px] max-lg:w-[1200px]">
                     <SlideShow />
-                </div>
-                <CourseSection />
-                <hr />
+                </section>
                 <div className="flex items-center justify-center">
                     <CourseCard />
                 </div>
+                <div>
+                    <div className="p-4 sm:px-5 sm:py-10 mx-auto lg:max-w-[1200px] max-lg:w-[1200px]">
+                        <div className="flex justify-between">
+                            <h2 className="text-xl font-semibold">
+                                Featured Post
+                            </h2>
+                            <div className="flex gap-3">
+                                <button
+                                    id="feature-post-prev"
+                                    type="button"
+                                    className="rounded-full px-2 flex relative items-center "
+                                >
+                                    <Ink />
+                                    <svg
+                                        focusable="false"
+                                        aria-hidden="true"
+                                        viewBox="0 0 24 24"
+                                        className="w-5 h-5"
+                                    >
+                                        <path
+                                            fill="#637381"
+                                            fillRule="evenodd"
+                                            d="M15.488 4.43a.75.75 0 0 1 .081 1.058L9.988 12l5.581 6.512a.75.75 0 1 1-1.138.976l-6-7a.75.75 0 0 1 0-.976l6-7a.75.75 0 0 1 1.057-.081"
+                                            clipRule="evenodd"
+                                        ></path>
+                                    </svg>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    id="feature-post-next"
+                                    className="rounded-full px-2 flex relative items-center"
+                                >
+                                    <Ink />
+                                    <svg
+                                        focusable="false"
+                                        className="w-5 h-5"
+                                        aria-hidden="true"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            fill="#637381"
+                                            fillRule="evenodd"
+                                            d="M8.512 4.43a.75.75 0 0 1 1.057.082l6 7a.75.75 0 0 1 0 .976l-6 7a.75.75 0 0 1-1.138-.976L14.012 12L8.431 5.488a.75.75 0 0 1 .08-1.057"
+                                            clipRule="evenodd"
+                                        ></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <Swiper
+                            spaceBetween={30}
+                            modules={[Navigation, Pagination, Scrollbar, A11y]}
+                            slidesPerView={4}
+                            className="py-4 px-1"
+                            navigation={{
+                                nextEl: "#feature-post-next",
+                                prevEl: "#feature-post-prev",
+                            }}
+                        >
+                            {posts &&
+                                posts.map((post) => (
+                                    <SwiperSlide>
+                                        <PostItem post={post}></PostItem>
+                                    </SwiperSlide>
+                                ))}
+                        </Swiper>
+                    </div>
+                </div>
             </main>
-            <Footer />
         </div>
     );
 }

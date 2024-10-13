@@ -9,23 +9,37 @@ $border-color: #e9ecee;
 $h-header: 89px;
 $h-admin-header: 68px;
 $w-lefNav: 240px;
-$h-m-header: 104px;
+$h-m-header: 65px;
 $b-shadow: rgba(17, 17, 26, 0.1) 0px 0px 16px;
 $c-black: rgb(33, 43, 54);
+
+.bg-custom {
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    background-image: url("../../assets/images/cyan-blur.png"),
+        url("../../assets/images/red-blur.png");
+    background-repeat: no-repeat, no-repeat;
+    background-position: right top, left bottom;
+    background-size: 50%, 50%;
+}
+
+.bg-custom-1 {
+    background-color: rgba(255, 255, 255);
+    backdrop-filter: blur(8px);
+    background-image: url("../../assets/images/cyan-blur.png"),
+        url("../../assets/images/red-blur.png");
+    background-repeat: no-repeat, no-repeat;
+    background-position: right top, left bottom;
+    background-size: 50%, 50%;
+}
 
 body {
     margin: 0;
     line-height: normal;
-    font-family: "Be Vietnam Pro", "Helvetica Neue", Helvetica, Arial !important;
+    font-family: "Public Sans", "Be VietNam Pro" !important;
+    color: "#1C252E";
 }
 :root {
-    /* fonts */
-    // --font-nunito-sans: "Nunito Sans";
-    // --font-lineawesome: LineAwesome;
-    // --font-inter: Inter;
-    // --font-dm-sans: "DM Sans";
-
-    /* font sizes */
     --font-size-xl: 20px;
     --font-size-base: 16px;
     --font-size-3xl: 22px;
@@ -109,7 +123,8 @@ p {
 }
 
 .d-block {
-    display: block !important;
+    opacity: 1;
+    max-height: 500px;
 }
 
 .b-shadow {
@@ -117,8 +132,8 @@ p {
 }
 
 .b-shadow-light {
-    box-shadow: rgba(0, 0, 0, 0.1) 0px 0px 5px 0px,
-        rgba(0, 0, 0, 0.1) 0px 0px 1px 0px;
+    box-shadow: rgba(145, 158, 171, 0.4) 0px 0px 2px 0px,
+        rgba(145, 158, 171, 0.12) 0px 12px 24px -4px;
 }
 
 .wrapMainDash {
@@ -139,7 +154,7 @@ p {
 }
 
 a {
-    text-decoration: none !important;
+    text-decoration: none;
 }
 
 .css-tj5bde-Svg {
@@ -175,6 +190,7 @@ a {
 }
 .pt-header {
     padding-top: $h-m-header;
+    flex: 1;
 }
 
 .boxShadow {
@@ -285,11 +301,6 @@ ul {
     overflow-y: hidden !important;
 }
 
-// input {
-//     outline: none !important;
-//     border: none !important;
-// }
-
 .b-shadow-sm {
     box-shadow: rgba(17, 17, 26, 0.05) 0px 0px 4px,
         rgba(17, 17, 26, 0.05) 0px 0px 26px !important;
@@ -314,7 +325,6 @@ body {
 
 button {
     cursor: pointer;
-    transition: all 0.1s ease;
     &:hover {
         opacity: 0.8;
     }
@@ -714,3 +724,91 @@ hr {
     color: #b81f1a;
     background-color: #ffe4de;
 }
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.text-green {
+    color: #00a76f;
+}
+
+.border-custom {
+    border-width: 2px;
+    border-color: transparent transparent #d1d5db #d1d5db;
+    border-bottom-left-radius: 8px;
+}
+
+.h-custom {
+    height: calc(100% - 48px);
+}
+
+.border-left-custom {
+    border-width: 2px;
+    border-color: transparent transparent transparent #d1d5db;
+}
+
+.content-html {
+    img {
+        border-radius: 10px;
+        margin: 14px 0px;
+        max-width: 100%; // Đảm bảo hình ảnh không vượt quá chiều rộng của container
+        height: auto; // Giữ tỷ lệ khung hình của hình ảnh
+    }
+
+    p {
+        margin: 16px 0; // Thêm khoảng cách giữa các đoạn văn
+        line-height: 1.6; // Tăng khoảng cách dòng để dễ đọc hơn
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin: 24px 0 16px; // Thêm khoảng cách trên và dưới cho các tiêu đề
+        font-weight: bold; // Làm cho các tiêu đề đậm hơn
+    }
+
+    ul,
+    ol {
+        margin: 16px 0;
+        padding-left: 20px;
+    }
+
+    a {
+        color: #00a76f;
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    blockquote {
+        margin: 16px 0;
+        padding: 10px 20px;
+        background-color: #f9f9f9;
+        border-left: 5px solid #ccc;
+    }
+}
+
+body,
+.App {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    margin: 0;
+}
+

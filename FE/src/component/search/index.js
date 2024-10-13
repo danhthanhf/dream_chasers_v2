@@ -83,7 +83,7 @@ const SearchBar = () => {
         <div
             className={clsx(
                 styles.searchWrap,
-                " relative flex flex-col items-center p-2 bg-white border-1 border-gray-300 rounded-full w-130 hover:border-black"
+                "relative flex flex-col items-center p-2 bg-white border-1 border-gray-300 rounded-full w-130 hover:border-black"
             )}
             ref={searchBarRef}
         >

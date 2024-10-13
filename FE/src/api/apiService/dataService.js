@@ -1,9 +1,59 @@
 import publicInstance, { privateInstance } from "../instance";
 
+export const getCommentByPostId = async (postId, pagination) => {
+    try {
+        const result = await publicInstance.get(
+            `/post/${postId}/comments?page=${pagination.page}&size=${pagination.size}`
+        );
+        return result.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const recordViewForPost = (postId) => {
+    try {
+        publicInstance.put(`/post/${postId}/add-view`);
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+export const getAllTag = async () => {
+    try {
+        const result = await publicInstance.get("/tag/getAll");
+        return result.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const restoreListCourse = async (ids) => {
     try {
         return await privateInstance.delete(`/course/restore/list`, {
             params: { ids: ids.join(", ") },
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const restoreListCategory = async (ids) => {
+    try {
+        return await privateInstance.delete(`/category/restore/list`, {
+            params: { ids: ids.join(", ") },
+        });
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const softDeleteListCategory = async (ids) => {
+    try {
+        return await privateInstance.delete(`/category/delete/soft/list`, {
+            params: {
+                ids: ids.join(", "),
+            },
         });
     } catch (error) {
         return Promise.reject(error);
@@ -200,7 +250,7 @@ export const getCourseByNameAndCategory = async (
 
 export const softDeleteCategoryById = (id) => {
     try {
-        return privateInstance.put(`/category/delete/soft/${id}`);
+        return privateInstance.delete(`/category/delete/soft/${id}`);
     } catch (error) {
         Promise.reject(error);
     }
@@ -215,7 +265,7 @@ export const hardDeleteCategoryById = (id) => {
 };
 export const restoreCategoryById = (id) => {
     try {
-        return privateInstance.put(`/category/restore/${id}`);
+        return privateInstance.delete(`/category/restore/${id}`);
     } catch (error) {
         Promise.reject(error);
     }
@@ -364,7 +414,10 @@ export const uploadFile = async (img) => {
 
 export const getPosts = async (page = "0", size = "5") => {
     try {
-        return await publicInstance.get(`/post/list?page=${page}&size=${size}`);
+        const result = await publicInstance.get(
+            `/post/list?page=${page}&size=${size}`
+        );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -378,10 +431,14 @@ export const serchTag = async (name) => {
     }
 };
 
-export const getPostByTitle = async (title) => {
+export const getPostByTitle = async (title, watchPatam = "", pagination) => {
     try {
+        let api = `/post?title=${encodeURIComponent(title)}`;
+        if (watchPatam != null) {
+            api += `&watch=${watchPatam}`;
+        }
         return await publicInstance.get(
-            `/post?title=${encodeURIComponent(title)}`
+            api + "&page=" + pagination.page + "&size=" + pagination.size
         );
     } catch (error) {
         return Promise.reject(error);
@@ -394,9 +451,10 @@ export const getAllPost = async (
     selectedSize = 5
 ) => {
     try {
-        return await privateInstance.get(
+        const result = await privateInstance.get(
             `/post/getAll?status=${status}&page=${page}&size=${selectedSize}`
         );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -404,9 +462,10 @@ export const getAllPost = async (
 
 export const processStatusPost = async (id, status, page, size) => {
     try {
-        return await privateInstance.put(
+        const result = await privateInstance.put(
             `/post/${id}/status/${status}?page=${page}&size=${size}`
         );
+        return result.contet;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -414,9 +473,10 @@ export const processStatusPost = async (id, status, page, size) => {
 
 export const searchPostByTitle = async (title, status, page = 0, size = 5) => {
     try {
-        return await privateInstance.get(
+        const result = await privateInstance.get(
             `/post?title=${title}&status=${status}&page=${page}&size=${size}`
         );
+        return result.content;
     } catch (error) {
         return Promise.reject(error);
     }

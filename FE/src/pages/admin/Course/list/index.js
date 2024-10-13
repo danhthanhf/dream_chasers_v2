@@ -218,7 +218,8 @@ function ListCourse() {
         });
     };
 
-    const openDeleteModal = (id) => {
+    const openDeleteModal = () => {
+        console.log("object");
         setModalContent({
             ...modalContent,
             isOpen: true,

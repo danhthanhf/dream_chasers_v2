@@ -34,15 +34,20 @@ import BookMark from "../pages/Post/bookmark";
 import MyPosts from "../pages/Post/MyPosts";
 import ListPost from "../pages/admin/post/list";
 import AdminViewPost from "../pages/admin/post/view";
+import Instructor from "../pages/user/instructor";
 
 const publicRoutes = [
     { path: "/", component: LandingPage },
-    { path: "/sign-up", component: SignUp },
-    { path: "/login", component: Login },
     { path: "*", component: NotFoundPage },
+    { path: "/404", component: NotFoundPage },
     { path: "/course/:id", component: Course },
     { path: "/posts", component: Post },
     { path: "/posts/:title/", component: ViewPost },
+];
+
+const authRoutes = [
+    { path: "/sign-up", component: SignUp },
+    { path: "/login", component: Login },
 ];
 
 const userRoutes = [
@@ -51,7 +56,7 @@ const userRoutes = [
         path: "/course/detail/:id/openComment",
         component: DetailCourse,
     },
-    { path: "/me/my-courses", component: MyCourses },
+    { path: "/me/my-learning", component: MyCourses },
     { path: "/course/payment/:id", component: Payment },
     { path: "/payment/success", component: SuccessPayment },
     { path: "/payment/failure", component: FailurePayment },
@@ -60,6 +65,7 @@ const userRoutes = [
     { path: "/post/:id/edit", component: EditPost },
     { path: "/me/posts/publish", component: MyPosts },
     { path: "/me/bookmark/posts", component: BookMark },
+    { path: "/me/instructor-dasboard", component: Instructor },
 ];
 
 const adminRoutes = [
@@ -95,4 +101,4 @@ const adminRoutes = [
     { path: "/admin/post/detail/:title", component: AdminViewPost },
 ];
 
-export { publicRoutes, adminRoutes, userRoutes };
+export { publicRoutes, authRoutes, adminRoutes, userRoutes };

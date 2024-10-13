@@ -21,10 +21,12 @@ export default function Comment({
 }) {
     const userInfo = useSelector((state) => state.login.user);
     const initComment = {
-        avatar: userInfo.avatar,
-        email: userInfo.email,
-        userName: userInfo.firstName + " " + userInfo.lastName,
-        lessonId: lessonId,
+        user: {
+            avatarUrl: userInfo.avatar,
+            email: userInfo.email,
+            firstName: userInfo.firstName,
+            lastName: userInfo.lastName,
+        },
     };
     const [comments, setComments] = useState([]);
     const [showReplyBox, setShowReplyBox] = useState(-1);
@@ -86,6 +88,7 @@ export default function Comment({
             }
         };
     }, [lessonId, quantityComment.page, quantityComment.size]);
+
     const sendValue = (sub) => {
         if (stompClient) {
             let data = null;
@@ -95,12 +98,14 @@ export default function Comment({
                       path: `/course/detail/${courseId}/openComment`,
                   })
                 : (data = { ...comment });
-            data = { ...data, lessonId: lessonId };
+
+
             stompClient.send(
                 `/app/comment/lesson/${lessonId}`,
                 {},
                 JSON.stringify(data)
             );
+
             sub
                 ? setSubComment({ ...subComment, content: "", parentId: "" })
                 : setComment({ ...comment, content: "" });
@@ -120,8 +125,6 @@ export default function Comment({
             ...subComment,
             content: "",
             parentId: cmt.id,
-            replyToUser: cmt.userEmail,
-            replyToUserName: cmt.userName,
         });
         e.currentTarget.scrollIntoView({ behavior: "smooth" });
     };

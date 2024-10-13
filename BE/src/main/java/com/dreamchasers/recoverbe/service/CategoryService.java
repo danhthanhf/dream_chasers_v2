@@ -19,6 +19,13 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
+    public ResponseObject restoreListCategory(List<UUID> ids) {
+        List<Category> categories = categoryRepository.findAllById(ids);
+        categories.forEach(category -> category.setDeleted(false));
+        categoryRepository.saveAll(categories);
+        return ResponseObject.builder().status(HttpStatus.OK).build();
+    }
+
     public ResponseObject restoreCategoryById(UUID id) {
         var category = categoryRepository.findById(id).orElse(null);
         if(category == null) return ResponseObject.builder().message("Category does not exist").status(HttpStatus.BAD_REQUEST).build();
@@ -27,15 +34,37 @@ public class CategoryService {
         return ResponseObject.builder().status(HttpStatus.OK).build();
     }
 
+    public ResponseObject softDeleteList(List<UUID> ids) {
+        List<Category> categories = ids.stream().map(id -> categoryRepository.findById(id).orElse(null)).toList();
+        if(categories.contains(null)) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category does not exist!").build();
+        }
+        boolean canDelete = false;
+        for(var category : categories) {
+            if(categoryRepository.existCourseByCategoryId(category.getId()) > 0) {
+                canDelete = true;
+                break;
+            }
+            category.setDeleted(true);
+        }
+        if(canDelete) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category has course!").build();
+        }
+        categoryRepository.saveAll(categories);
+        return ResponseObject.builder().status(HttpStatus.OK).build();
+    }
+
     public ResponseObject softDelete(UUID id) {
         var category = categoryRepository.findById(id).orElse(null);
         if (category == null) {
             return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category does not exist!").build();
         }
+        if (categoryRepository.existCourseByCategoryId(id) > 0) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category has course!").build();
+        }
         category.setDeleted(true);
         categoryRepository.save(category);
-
-        return ResponseObject.builder().status(HttpStatus.OK).build();
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
     }
 
     public Category getByName(String name) {

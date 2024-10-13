@@ -11,7 +11,7 @@ import Modal from "../../../../component/modal";
 
 const selectes = [5, 10, 25];
 
-function reFormatCuorse(data) {
+function reFormat(data) {
     if (!data || data.length === 0) return [];
     return data.map((item) => {
         const create = new Date(item.createdAt);
@@ -368,7 +368,7 @@ function ListDeletedUser() {
                             <DataGridComponent
                                 handleRowSelection={handleRowSelection}
                                 columns={columns}
-                                rows={reFormatCuorse(users)}
+                                rows={reFormat(users)}
                                 totalElements={totalData}
                                 isLoading={isLoadingData}
                                 paginationModel={{

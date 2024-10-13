@@ -27,9 +27,6 @@ export default function DataGridComponent({
                 }}
             >
                 <DataGrid
-                    getSelectedRows={() => {
-                        console.log("aasd");
-                    }}
                     onRowSelectionModelChange={handleRowSelection}
                     paginationModel={paginationModel}
                     onPaginationModelChange={setPaginationModel}
@@ -45,13 +42,17 @@ export default function DataGridComponent({
                     checkboxSelection
                     sx={{
                         "& .MuiDataGrid-root": {
-                            fontFamily: "Be Vietnam Pro, Helvetica Neue",
+                            fontFamily: "PubPublic Sanslic, Helvetica Neue",
                         },
+                       
                         "& .MuiDataGrid-cell": {
-                            fontFamily: "Be Vietnam Pro, Helvetica Neue", // Thay đổi font chữ cho các ô
+                            fontFamily: "Public Sans, Helvetica Neue",
                         },
                         "& .MuiDataGrid-columnHeaders": {
-                            fontFamily: "Be Vietnam Pro, Helvetica Neue",
+                            fontFamily: "Public Sans, Helvetica Neue",
+                        },
+                        "& .MuiDataGrid-virtualScroller": {
+                            overflow: "visible !important",
                         },
                     }}
                     disableRowSelectionOnClick

@@ -18,6 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 public class Section extends BaseModel {
     private String title;
+    private int totalDuration;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Lesson> lessons = new ArrayList<>();

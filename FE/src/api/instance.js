@@ -1,15 +1,17 @@
 import axios from "axios";
 import { toast } from "sonner";
+import loginSlice from "../redux/reducers/loginSlice";
 let redirectPage = null;
-export const injectNavigate = (navigate) => {
+let dispatcher = null;
+
+export const injectNavigate = (navigate, dispatch) => {
     redirectPage = navigate;
+    dispatcher = dispatch;
 };
 
-const sessionExpired = () => {
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
-    sessionStorage.setItem("prevPath", window.location.pathname);
+export const sessionExpired = () => {
     toast.error("Session expired, please login again");
+    dispatcher(loginSlice.actions.setLogout());
     redirectPage("/login");
 };
 
@@ -34,7 +36,9 @@ publicInstance.interceptors.response.use(
         return res.data;
     },
     function (error) {
-        console.log(error);
+        if (error.response.status === 404) {
+            redirectPage("/404");
+        }
         return Promise.reject(error.response.data);
     }
 );
@@ -66,11 +70,11 @@ privateInstance.interceptors.request.use(function (config) {
 });
 
 userInstance.interceptors.response.use(
-    console.log("userInstance"),
     function (res) {
         return res.data;
     },
     function (error) {
+        console.log(error);
         if (error.response.status === 401) {
             sessionExpired();
         }
@@ -80,6 +84,9 @@ userInstance.interceptors.response.use(
 
 userInstance.interceptors.request.use(function (config) {
     let token = sessionStorage.getItem("token");
+    if (!token) {
+        sessionExpired();
+    }
     if (token != null) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });

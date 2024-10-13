@@ -16,15 +16,13 @@ export default function useNotificationWebSocket() {
     useEffect(() => {
         let stompClient = null;
         if (userInfo) {
-            const alias = userInfo.email.split("@")[0];
             const sockjs = new SockJS("http://localhost:8080/ws");
             stompClient = Stomp.over(sockjs);
             stompClient.connect({}, () => {
                 stompClient.subscribe(
-                    `/user/${alias}/notification`,
+                    `/user/${userInfo.email}/notification`,
                     (message) => {
                         const data = JSON.parse(message.body);
-                        console.log(data);
                         toast.info("You have a new notification");
                         dispatch(notificationSlice.actions.add(data));
                     }

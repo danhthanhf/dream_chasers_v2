@@ -3,18 +3,32 @@ package com.dreamchasers.recoverbe.service;
 import com.dreamchasers.recoverbe.dto.SectionDTO;
 import com.dreamchasers.recoverbe.model.CourseKit.Lesson;
 import com.dreamchasers.recoverbe.model.CourseKit.Section;
+import com.dreamchasers.recoverbe.model.User.Comment;
 import com.dreamchasers.recoverbe.repository.LessonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class LessonService {
     private final LessonRepository lessonRepository;
+
+    public Lesson saveComment(UUID lessonId, Comment comment) {
+        var lesson = lessonRepository.findById(lessonId).orElse(null);
+        if(lesson == null) {
+            return null;
+        }
+        lesson.getComments().add(comment);
+
+
+        lessonRepository.save(lesson);
+        return lesson;
+    }
 
     public List<Lesson> updateLessonsOfSection(Section oldSection, SectionDTO newSection) {
         if(newSection.getLessons().isEmpty()) {

@@ -1,7 +1,7 @@
+import { Button } from "@nextui-org/button";
 import styles from "./LeftNavDash.module.scss";
 import clsx from "clsx";
 import appDash from "../../../assets/images/app_dash.svg";
-import icUser from "../../../assets/images/ic_user.svg";
 import icCourse from "../../../assets/images/icCourse.svg";
 import { Link } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
@@ -9,9 +9,30 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { adminMenuSelector } from "../../../redux/selector";
 
+const SubItem = ({ path, title, isSelect }) => {
+    var name = "List";
+    if (title === 1) {
+        name = "Create";
+    } else if (title === 2) {
+        name = "HIstory Delete";
+    }
+    return (
+        <Button className={clsx(styles.button, "bg-white w-full")}>
+            <Link className={clsx(styles.subItem)} to={path}>
+                <li className="d-flex">
+                    <span className={clsx(styles.dotItem)}></span>
+                    <span className={clsx(styles.text)}>{name}</span>
+                </li>
+            </Link>
+        </Button>
+    );
+};
+
 function LeftNavDash() {
     const [close, setClose] = useState(false);
     const [listOpen, setListOpen] = useState([]);
+    const [subOpen, setSubOpen] = useState();
+    const [handleApp, setHandleApp] = useState(false);
     const showMenu = useSelector(adminMenuSelector);
 
     const handleOnSub = (e) => {
@@ -65,7 +86,10 @@ function LeftNavDash() {
                     >
                         OVERVIEW
                     </li>
-                    <div className={clsx(styles.listItem)}>
+                    <Button
+                        className={clsx(styles.listItem, "bg-white w-full")}
+                        onClick={() => setHandleApp(!handleApp)}
+                    >
                         <Link className={clsx(styles.actionLink)} to="/admin">
                             <span className={clsx(styles.icon)}>
                                 <img src={appDash} alt="" />
@@ -73,13 +97,16 @@ function LeftNavDash() {
                             <span
                                 className={clsx(
                                     styles.nameAction,
-                                    styles.label
+                                    styles.label,
+                                    {
+                                        "text-[#00a76f]": handleApp,
+                                    }
                                 )}
                             >
                                 App
                             </span>
                         </Link>
-                    </div>
+                    </Button>
                 </div>
                 <div className={clsx(styles.sectionNav)}>
                     <li
@@ -90,15 +117,51 @@ function LeftNavDash() {
                         Manager
                     </li>
                     <div className={clsx(styles.listItem)}>
-                        <div
+                        <Button
                             id="userLink"
-                            className={clsx(styles.actionLink, {
+                            className={clsx(styles.actionLink, "w-full px-4", {
                                 [styles.active]: listOpen.includes("userLink"),
                             })}
                             onClick={handleOnSub}
                         >
                             <span className={clsx(styles.icon)}>
-                                <img src={icUser} alt="" />
+                                {listOpen.includes("userLink") ? (
+                                    <svg
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="#00a76f"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            opacity="0.32"
+                                            d="M2.28099 19.6575C2.36966 20.5161 2.93261 21.1957 3.77688 21.3755C5.1095 21.6592 7.6216 22 12 22C16.3784 22 18.8905 21.6592 20.2232 21.3755C21.0674 21.1957 21.6303 20.5161 21.719 19.6575C21.8505 18.3844 22 16.0469 22 12C22 7.95305 21.8505 5.6156 21.719 4.34251C21.6303 3.48389 21.0674 2.80424 20.2231 2.62451C18.8905 2.34081 16.3784 2 12 2C7.6216 2 5.1095 2.34081 3.77688 2.62451C2.93261 2.80424 2.36966 3.48389 2.28099 4.34251C2.14952 5.6156 2 7.95305 2 12C2 16.0469 2.14952 18.3844 2.28099 19.6575Z"
+                                            fill="rgb(99, 115, 129)"
+                                        />
+                                        <path
+                                            d="M13.9382 13.8559C15.263 13.1583 16.1663 11.7679 16.1663 10.1666C16.1663 7.8655 14.3008 6 11.9996 6C9.69841 6 7.83291 7.8655 7.83291 10.1666C7.83291 11.768 8.73626 13.1584 10.0612 13.856C8.28691 14.532 6.93216 16.1092 6.51251 18.0529C6.45446 18.3219 6.60246 18.5981 6.87341 18.6471C7.84581 18.8231 9.45616 19 12.0006 19C14.545 19 16.1554 18.8231 17.1278 18.6471C17.3977 18.5983 17.5454 18.3231 17.4876 18.0551C17.0685 16.1103 15.7133 14.5321 13.9382 13.8559Z"
+                                            fill="rgb(99, 115, 129)"
+                                        />
+                                    </svg>
+                                ) : (
+                                    <svg
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            opacity="0.32"
+                                            d="M2.28099 19.6575C2.36966 20.5161 2.93261 21.1957 3.77688 21.3755C5.1095 21.6592 7.6216 22 12 22C16.3784 22 18.8905 21.6592 20.2232 21.3755C21.0674 21.1957 21.6303 20.5161 21.719 19.6575C21.8505 18.3844 22 16.0469 22 12C22 7.95305 21.8505 5.6156 21.719 4.34251C21.6303 3.48389 21.0674 2.80424 20.2231 2.62451C18.8905 2.34081 16.3784 2 12 2C7.6216 2 5.1095 2.34081 3.77688 2.62451C2.93261 2.80424 2.36966 3.48389 2.28099 4.34251C2.14952 5.6156 2 7.95305 2 12C2 16.0469 2.14952 18.3844 2.28099 19.6575Z"
+                                            fill="rgb(99, 115, 129)"
+                                        />
+                                        <path
+                                            d="M13.9382 13.8559C15.263 13.1583 16.1663 11.7679 16.1663 10.1666C16.1663 7.8655 14.3008 6 11.9996 6C9.69841 6 7.83291 7.8655 7.83291 10.1666C7.83291 11.768 8.73626 13.1584 10.0612 13.856C8.28691 14.532 6.93216 16.1092 6.51251 18.0529C6.45446 18.3219 6.60246 18.5981 6.87341 18.6471C7.84581 18.8231 9.45616 19 12.0006 19C14.545 19 16.1554 18.8231 17.1278 18.6471C17.3977 18.5983 17.5454 18.3231 17.4876 18.0551C17.0685 16.1103 15.7133 14.5321 13.9382 13.8559Z"
+                                            fill="rgb(99, 115, 129)"
+                                        />
+                                    </svg>
+                                )}
                             </span>
                             <span
                                 className={clsx(
@@ -108,21 +171,37 @@ function LeftNavDash() {
                             >
                                 User
                             </span>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="img"
-                                className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
-                                width="1em"
-                                height="1em"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
-                                ></path>
-                            </svg>
-                        </div>
+                            {listOpen.includes("userLink") ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="#00a76f"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            )}
+                        </Button>
                         {listOpen.includes("userLink") && (
                             <div
                                 id="subUser"
@@ -130,54 +209,23 @@ function LeftNavDash() {
                                     "d-block": !close,
                                 })}
                             >
-                                <ul className={clsx(styles.subList)}>
-                                    <Link
-                                        to="/admin/user/list"
-                                        id="list"
-                                        onClick={subItemClickHandle}
-                                        className={clsx(styles.subItem)}
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                List
-                                            </span>
-                                        </li>
-                                    </Link>
+                                <ul>
+                                    <SubItem
+                                        path={"/admin/user/list"}
+                                    ></SubItem>
+                                    <SubItem
+                                        title={1}
+                                        path={"/admin/user/create"}
+                                    ></SubItem>
 
-                                    <Link
-                                        to="/admin/user/create"
-                                        onClick={subItemClickHandle}
-                                        className={clsx(styles.subItem)}
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                Create
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/user/historyDelete"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                History Delete
-                                            </span>
-                                        </li>
-                                    </Link>
+                                    <SubItem
+                                        title={2}
+                                        path={"/admin/user/historyDelete"}
+                                    ></SubItem>
                                 </ul>
                             </div>
                         )}
-                        <div
+                        <Button
                             id="postLink"
                             className={clsx(styles.actionLink, {
                                 [styles.active]: listOpen.includes("postLink"),
@@ -208,21 +256,38 @@ function LeftNavDash() {
                             >
                                 Post
                             </span>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="img"
-                                className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
-                                width="1em"
-                                height="1em"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
-                                ></path>
-                            </svg>
-                        </div>
+                            {listOpen.includes("postLink") ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="#00a76f"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            )}
+                        </Button>
                         {listOpen.includes("postLink") && (
                             <div
                                 id="subPost"
@@ -231,32 +296,24 @@ function LeftNavDash() {
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
-                                    <Link
-                                        to="/admin/post/list"
-                                        id="list"
-                                        onClick={subItemClickHandle}
-                                        className={clsx(styles.subItem)}
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                List
-                                            </span>
-                                        </li>
-                                    </Link>
+                                    <SubItem
+                                        path={"/admin/post/list"}
+                                    ></SubItem>
                                 </ul>
                             </div>
                         )}
 
-                        <div
+                        <Button
                             onClick={handleOnSub}
                             id="courseLink"
-                            className={clsx(styles.actionLink, {
-                                [styles.active]:
-                                    listOpen.includes("courseLink"),
-                            })}
+                            className={clsx(
+                                styles.actionLink,
+                                "bg-white w-full",
+                                {
+                                    [styles.active]:
+                                        listOpen.includes("courseLink"),
+                                }
+                            )}
                         >
                             <span className={clsx(styles.icon)}>
                                 <img className="ml-0.5" src={icCourse} alt="" />
@@ -269,21 +326,38 @@ function LeftNavDash() {
                             >
                                 Course
                             </span>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="img"
-                                className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
-                                width="1em"
-                                height="1em"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
-                                ></path>
-                            </svg>
-                        </div>
+                            {listOpen.includes("courseLink") ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="#00a76f"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            )}
+                        </Button>
                         {listOpen.includes("courseLink") && (
                             <div
                                 id="subCourse"
@@ -292,55 +366,32 @@ function LeftNavDash() {
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/course/list"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                List
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/course/create"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                Create
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/course/historyDelete"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                History Delete
-                                            </span>
-                                        </li>
-                                    </Link>
+                                    <SubItem
+                                        path={"/admin/course/list"}
+                                    ></SubItem>
+                                    <SubItem
+                                        title={1}
+                                        path={"/admin/course/create"}
+                                    ></SubItem>
+
+                                    <SubItem
+                                        title={2}
+                                        path={"/admin/course/historyDelete"}
+                                    ></SubItem>
                                 </ul>
                             </div>
                         )}
 
-                        <div
+                        <Button
                             id="categoryLink"
-                            className={clsx(styles.actionLink, {
-                                [styles.active]:
-                                    listOpen.includes("categoryLink"),
-                            })}
+                            className={clsx(
+                                styles.actionLink,
+                                "bg-white w-full",
+                                {
+                                    [styles.active]:
+                                        listOpen.includes("categoryLink"),
+                                }
+                            )}
                             onClick={handleOnSub}
                         >
                             <span className={clsx(styles.icon)}>
@@ -363,21 +414,38 @@ function LeftNavDash() {
                             >
                                 Category
                             </span>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="img"
-                                className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
-                                width="1em"
-                                height="1em"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
-                                ></path>
-                            </svg>
-                        </div>
+                            {listOpen.includes("categoryLink") ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="#00a76f"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            )}
+                        </Button>
                         {listOpen.includes("categoryLink") && (
                             <div
                                 id="subCategory"
@@ -386,49 +454,22 @@ function LeftNavDash() {
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/category/list"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                List
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/category/create"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                Create
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/category/historyDelete"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                History Delete
-                                            </span>
-                                        </li>
-                                    </Link>
+                                    <SubItem
+                                        path={"/admin/category/list"}
+                                    ></SubItem>
+                                    <SubItem
+                                        title={1}
+                                        path={"/admin/category/create"}
+                                    ></SubItem>
+
+                                    <SubItem
+                                        title={2}
+                                        path={"/admin/category/historyDelete"}
+                                    ></SubItem>
                                 </ul>
                             </div>
                         )}
-                        <div
+                        <Button
                             id="invoiceLink"
                             className={clsx(styles.actionLink, {
                                 [styles.active]:
@@ -459,21 +500,38 @@ function LeftNavDash() {
                             >
                                 Invoice
                             </span>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                aria-hidden="true"
-                                role="img"
-                                className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
-                                width="1em"
-                                height="1em"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
-                                ></path>
-                            </svg>
-                        </div>
+                            {listOpen.includes("invoiceLink") ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="#00a76f"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true"
+                                    role="img"
+                                    className="arrow MuiBox-root css-3o0h5k iconify iconify--eva"
+                                    width="1em"
+                                    height="1em"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        fill="currentColor"
+                                        d="M10 19a1 1 0 0 1-.64-.23a1 1 0 0 1-.13-1.41L13.71 12L9.39 6.63a1 1 0 0 1 .15-1.41a1 1 0 0 1 1.46.15l4.83 6a1 1 0 0 1 0 1.27l-5 6A1 1 0 0 1 10 19"
+                                    ></path>
+                                </svg>
+                            )}
+                        </Button>
                         {listOpen.includes("invoiceLink") && (
                             <div
                                 id="subInvoice"
@@ -482,45 +540,18 @@ function LeftNavDash() {
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/invoice/list"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                List
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/category/create"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                Create
-                                            </span>
-                                        </li>
-                                    </Link>
-                                    <Link
-                                        className={clsx(styles.subItem)}
-                                        to="/admin/invoice/historyDelete"
-                                    >
-                                        <li className="d-flex">
-                                            <span
-                                                className={clsx(styles.dotItem)}
-                                            ></span>
-                                            <span className={clsx(styles.text)}>
-                                                History Delete
-                                            </span>
-                                        </li>
-                                    </Link>
+                                    <SubItem
+                                        path={"/admin/invoice/list"}
+                                    ></SubItem>
+                                    <SubItem
+                                        title={1}
+                                        path={"/admin/invoice/create"}
+                                    ></SubItem>
+
+                                    <SubItem
+                                        title={2}
+                                        path={"/admin/invoice/historyDelete"}
+                                    ></SubItem>
                                 </ul>
                             </div>
                         )}

@@ -19,6 +19,7 @@ public class CourseDTO {
     private String title;
     private int price;
     private int discount;
+    private int totalDuration;
     private String description;
     private LocalDateTime date;
     private List<String> categories;

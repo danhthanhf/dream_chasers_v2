@@ -64,8 +64,6 @@
 
 .courseTitle {
     color: var(--Grey-15, #262626);
-    font: 600 38px/150% "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
     text-align: start;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -81,8 +79,6 @@
 
 .courseDescription {
     color: var(--Grey-35, #59595a);
-    font: 400 16px/24px "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
     text-align: start;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -231,8 +227,6 @@
     color: var(--Grey-15, #262626);
     text-align: right;
     margin-bottom: 26px;
-    font: 700 50px/40% "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
 }
 
 @media (max-width: 991px) {
@@ -246,8 +240,6 @@
     color: var(--Grey-20, #333);
     letter-spacing: -0.12px;
     margin-top: 40px;
-    font: 600 20px/150% "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
     text-align: start;
 }
 
@@ -271,8 +263,6 @@
 
 .lessonGroupTitle {
     color: var(--Grey-20, #333);
-    font: 500 16px/24px "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
 }
 
 .lessonItem {
@@ -306,8 +296,6 @@
 .lessonTitle {
     text-align: start;
     color: var(--Grey-20, #333);
-    font: 500 16px "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -316,8 +304,6 @@
 
 .lessonNumber {
     color: var(--Grey-35, #59595a);
-    font: 400 14px "Be Vietnam Pro", -apple-system, Roboto, Helvetica,
-        sans-serif;
 }
 
 .timeInfo {
@@ -345,10 +331,6 @@
     width: 20px;
 }
 
-.time {
-    font-family: "Be Vietnam Pro", -apple-system, Roboto, Helvetica, sans-serif;
-}
-
 .curriculumItem {
     display: flex;
     align-items: start;
@@ -360,7 +342,6 @@
 
 .curriculumItemTitle {
     color: var(--Grey-20, #333);
-    font: 700 16px "Be Vietnam Pro", sans-serif;
     margin: 8px;
     border-radius: 8px;
     display: flex;

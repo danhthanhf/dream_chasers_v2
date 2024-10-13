@@ -1,19 +1,26 @@
-import React, { memo, useEffect, useState } from "react";
-import clsx from "clsx";
-import styles from "./CreatePost.module.scss";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
-import "quill-image-uploader/dist/quill.imageUploader.min.css";
-import ImageUploader from "quill-image-uploader";
 import { Quill } from "react-quill/lib";
-import { toast } from "sonner";
+import ImageUploader from "quill-image-uploader";
+import clsx from "clsx";
+import fileSelect from "../../../assets/images/fileSelect.svg";
+import Debounce from "../../../component/debounce";
+import styles from "../../admin/Course/create/CreateCourse.module.scss";
+import ReactQuill from "react-quill";
 import * as dataApi from "../../../api/apiService/dataService";
-import SubContent from "./subContent/index";
+import "react-quill/dist/quill.snow.css";
+import InputComponent from "../../../component/InputComponent";
+import * as dataService from "../../../api/apiService/dataService";
+import * as userService from "../../../api/apiService/authService";
 
-let injectIsLoading = null;
+import "quill-image-uploader/dist/quill.imageUploader.min.css";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import btnClose from "../../../assets/images/btnClose.svg";
+import SelectComponent from "../../../component/SelectComponent";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 Quill.register("modules/imageUploader", ImageUploader);
-
+let injectIsLoading = null;
 const handleUpload = (file, setIsLoading) => {
     if (!file) {
         return;
@@ -32,64 +39,139 @@ const handleUpload = (file, setIsLoading) => {
     return fetchApi();
 };
 
-function CreatePost({ isEdit, postInit }) {
+function CreatePost() {
+    const [errors, setErrors] = useState({});
+    const [listTagData, setListTagData] = useState([]);
+    const user = useSelector((state) => state.login.user);
+
     const [post, setPost] = useState({
-        title: "",
+        titie: "",
+        description: "",
+        thumbnail: "",
         content: "",
+        tags: [],
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [openSubContent, setOpenSubContent] = useState(false);
     injectIsLoading = setIsLoading;
 
-    const handleChangeQuill = (content, delta, source, editor) =>
+    const navigate = useNavigate();
+
+    // const handleUpload = (file, setIsLoading) => {
+    //     if (!file) {
+    //         return;
+    //     }
+    //     injectIsLoading(true);
+    //     const fetchApi = async () => {
+    //         try {
+    //             const result = await dataApi.uploadFile(file);
+    //             injectIsLoading(false);
+    //             return result.content;
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     };
+
+    //     return fetchApi();
+    // };
+
+    const handleChangeTag = (data) => {
+        setPost({ ...post, tags: [...data] });
+    };
+    const handleRemoveItemPrevivew = (e) => {
+        setPost({ ...post, thumbnail: "" });
+    };
+
+    const handleUpLoadThubmnail = (e) => {
+        const file = e.target.files[0];
+        setIsLoading(true);
+        toast.promise(dataApi.uploadFile(file), {
+            loading: "loading...",
+            success: (data) => {
+                setPost({ ...post, thumbnail: data.content });
+                setIsLoading(false);
+                return "Upload thumbnail success";
+            },
+            error: (error) => {
+                console.log(error);
+                return "error";
+            },
+        });
+        e.target.value = "";
+    };
+
+    const handleChangeQuill = (content) =>
         setPost({ ...post, content: content });
 
-    const handleOpenSubContent = () => {
-        if (isLoading) {
-            return toast.error("Please wait for the image to upload");
-        }
-        setOpenSubContent(!openSubContent);
+    const handleTitleChange = (e) => {
+        setPost({ ...post, title: e.target.value });
+    };
+    const handleDescChange = (e) => {
+        setPost({ ...post, description: e.target.value });
     };
 
     useEffect(() => {
-        setPost({ ...postInit });
-    }, [postInit]);
+        const fetchApi = async () => {
+            try {
+                const result = await dataApi.getAllTag();
+                const formatTags = result.map((tag) => ({
+                    label: tag.name,
+                    value: tag.id,
+                }));
+                setListTagData(formatTags);
+            } catch (error) {
+                console.log(error);
+                toast.error("Error!");
+            }
+        };
+        fetchApi();
+    }, []);
+    const handlePusblish = () => {
+        const tagsValue = post.tags.map((tag) => {
+            return {
+                name: tag.label,
+            };
+        });
+        toast.promise(
+            userService.createPost({ ...post, tags: tagsValue }, user.email),
+            {
+                loading: "loading...",
+                success: () => {
+                    navigate(`/posts/${encodeURIComponent(post.title)}`);
+                    return "Publis successfully, please wait for admin approval";
+                },
+                error: (error) => {
+                    console.log(error);
+                    return error.message;
+                },
+            }
+        );
+    };
 
     return (
-        <div className="container pt-10 py-28">
-            {openSubContent ? (
-                <SubContent
-                    isEdit={isEdit}
-                    post={post}
-                    handleBackClick={handleOpenSubContent}
-                ></SubContent>
-            ) : (
-                <div className="wrap">
-                    <h1 className="font-bold text-3xl uppercase ">
-                        {isEdit ? "Edit" : "Create"} Post
-                    </h1>
-                    <div className={clsx(styles.wrap, "mt-10")}>
-                        <form>
-                            <div className={clsx(styles.formField, "text-xl ")}>
-                                <textarea
-                                    required
-                                    value={post.title}
-                                    onChange={(e) =>
-                                        setPost({
-                                            ...post,
-                                            title: e.target.value,
-                                        })
-                                    }
-                                    name="title"
-                                    className={clsx(styles.formInput)}
-                                    placeholder="Enter a title..."
-                                    type="text"
-                                />
-                                <label className={clsx(styles.formLabel)}>
-                                    Title
-                                </label>
-                            </div>
-                            <div className="mt-6">
+        <div className="container flex py-10">
+            <div className="mx-auto max-w-[800px] w-[800px] ">
+                <div className="shadow-lg rounded-lg flex flex-col gap-4">
+                    <div className="w-full p-6 border-b-[1px] border-b-gray-300">
+                        <h4 className="font-bold text-2xl">Details</h4>
+                        <span className="text-gray-500 text-sm font">
+                            Title, short description, image...
+                        </span>
+                    </div>
+                    <div className="px-6 mb-6 flex flex-col gap-4">
+                        <InputComponent
+                            onHandleChange={handleTitleChange}
+                            value={post.title}
+                            label="Title"
+                        ></InputComponent>
+                        <InputComponent
+                            onHandleChange={handleDescChange}
+                            value={post.description}
+                            size="lg"
+                            label="Description"
+                        ></InputComponent>
+                        <div>
+                            <span className="text-xs font-bold">Content</span>
+                            <div className="mt-2.5">
                                 <ReactQuill
                                     theme="snow"
                                     value={post.content || ""}
@@ -110,26 +192,115 @@ function CreatePost({ isEdit, postInit }) {
                                     formats={formats}
                                 ></ReactQuill>
                             </div>
-                        </form>
+                        </div>
+                        <div>
+                            <span className="text-xs font-bold">Cover</span>
+                            <div className="mt-2.5">
+                                <div className="flex overflow-hidden">
+                                    <div
+                                        className={clsx(
+                                            styles.formField,
+                                            "w-1/2 overflow-hidden"
+                                        )}
+                                    >
+                                        <label
+                                            htmlFor="thumbnail"
+                                            className={clsx(
+                                                styles.formLabel2,
+                                                styles.labelFile
+                                            )}
+                                        >
+                                            <div
+                                                className={clsx(
+                                                    styles.iconFile
+                                                )}
+                                            >
+                                                <img src={fileSelect} alt="" />
+                                            </div>
+                                        </label>
+                                        {errors.thumbnail && (
+                                            <div className="text-red-500 mt-1 text-sm mr-2">
+                                                {errors.thumbnail}
+                                            </div>
+                                        )}
+                                        <input
+                                            name="thumbnail"
+                                            onChange={handleUpLoadThubmnail}
+                                            id="thumbnail"
+                                            type="file"
+                                            hidden
+                                            accept=".jpg, .jpeg, .png, .webp"
+                                        />
+                                    </div>
+                                    <div
+                                        className={clsx(
+                                            styles.formField,
+                                            "w-1/2 mt-[10px]"
+                                        )}
+                                    >
+                                        {post.thumbnail && (
+                                            <div
+                                                className={clsx(
+                                                    styles.imgField
+                                                )}
+                                            >
+                                                <img
+                                                    className={clsx(
+                                                        styles.thumbnailImg,
+                                                        "rounded-lg"
+                                                    )}
+                                                    src={post.thumbnail}
+                                                    alt=""
+                                                />
+                                                <button
+                                                    onClick={(e) =>
+                                                        handleRemoveItemPrevivew(
+                                                            e
+                                                        )
+                                                    }
+                                                    className={clsx(
+                                                        styles.btnClosePreview,
+                                                        "w-4 h-4"
+                                                    )}
+                                                >
+                                                    <img
+                                                        src={btnClose}
+                                                        alt=""
+                                                    />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mb-2">
+                            <SelectComponent
+                                data={listTagData}
+                                handleChange={handleChangeTag}
+                            ></SelectComponent>
+                        </div>
                     </div>
-
+                </div>
+                <div className="text-right mt-8">
                     <button
-                        onClick={handleOpenSubContent}
-                        className={clsx(
-                            "cursor-pointer hover:opacity-80z w-auto rounded-lg inline-block float-end my-4 px-4 py-2 text-white bg-black font-semibold text-base",
-                            {
-                                notActive: !post.title && !post.content,
-                            }
-                        )}
+                        type="button"
+                        className="rounded-lg cursor-pointer bg-white hover:bg-gray-100 transition-all ease-linear delay-50 border border-gray-300 text-black mr-4 font-bold text-base px-4 py-2.5"
+                    >
+                        Preview
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handlePusblish}
+                        className="rounded-lg cursor-pointer hover:opacity-75 bg-[#1C252E] text-white font-bold text-base px-4 py-2.5"
                     >
                         Publish
                     </button>
                 </div>
-            )}
+            </div>
         </div>
     );
 }
-
 const toolbar = {
     toolbar: {
         container: [
@@ -169,4 +340,4 @@ const formats = [
     "imageBlot",
 ];
 
-export default memo(CreatePost);
+export default CreatePost;

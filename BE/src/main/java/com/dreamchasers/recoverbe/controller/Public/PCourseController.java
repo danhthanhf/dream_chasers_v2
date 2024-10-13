@@ -14,14 +14,17 @@ import java.util.UUID;
 public class PCourseController {
     private final CourseService courseService;
 
-    @GetMapping
-    public String greeting() {
-        return "Hello from Course Controller";
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseObject> getCourseById(@PathVariable UUID id, @RequestParam boolean isDeleted){
         var result = courseService.getCourseById(id, isDeleted);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<ResponseObject> getAllByPageable(@RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "5") int size) {
+        var result = courseService.getAll(page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 }

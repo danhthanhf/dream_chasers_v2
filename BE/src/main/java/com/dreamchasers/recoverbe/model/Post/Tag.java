@@ -11,6 +11,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Tag extends BaseModel {
-    private String title;
-    private int quantityOfPost = 1;
+    private String name;
+    private int totalPost = 1;
 }
