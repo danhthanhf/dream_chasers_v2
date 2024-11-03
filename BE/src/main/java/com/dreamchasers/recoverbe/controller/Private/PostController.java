@@ -1,13 +1,10 @@
 package com.dreamchasers.recoverbe.controller.Private;
 
+import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.User.User;
 import com.dreamchasers.recoverbe.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -18,9 +15,9 @@ import java.util.UUID;
 public class PostController {
     private final PostService postService;
 
-    @PutMapping("/{id}/status/{status}")
-    public ResponseEntity<ResponseObject> updateStatus(@PathVariable UUID id, @PathVariable String status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
-        var result = postService.updateStatus(id, status, page, size);
+    @PutMapping("/{id}/status")
+    public ResponseEntity<ResponseObject> changeCourseStatus(@PathVariable UUID id, @RequestBody StatusChangeDTO statusChangeDTO) {
+        ResponseObject result = postService.adminChangeStatus(id, statusChangeDTO);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

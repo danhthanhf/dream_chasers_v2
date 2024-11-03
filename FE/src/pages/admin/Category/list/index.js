@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "../../Course/list/List.module.scss";
 import clsx from "clsx";
 import { toast } from "sonner";
-import * as dataService from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
 import { Link } from "react-router-dom";
 import deleteIcon from "../../../../assets/images/delete.svg";
 import editIcon from "../../../../assets/images/edit.svg";
@@ -50,7 +50,7 @@ function ListCategory() {
             field: "category",
             headerName: "Category",
             headerClassName: "theme-header",
-            width: 320,
+            width: 340,
             type: "string",
             sortable: true,
         },
@@ -59,23 +59,26 @@ function ListCategory() {
             headerName: "Total Course",
             headerClassName: "theme-header",
             sortable: true,
-            type: "number",
+            type: "string",
+            sortComparator: (v1, v2) => {
+                return v1 - v2;
+            },
             renderCell: (params) => {
                 return <div className="text-center">{params.value}</div>;
             },
-            width: 176,
+            width: 196,
         },
         {
             field: "createdAt",
             headerName: "Create At",
             headerClassName: "theme-header",
             sortable: true,
-            type: "dateTime",
-            width: 200,
+            type: "date",
+            width: 240,
             renderCell: (params) => {
-                const date = params.value.toLocaleDateString();
-                const time = params.value.toLocaleTimeString();
-                return <>{date + "" + time}</>;
+                const date = params.value.toLocaleDateString("vi");
+                const time = params.value.toLocaleTimeString("vi");
+                return <>{time + " - " + date}</>;
             },
         },
         {
@@ -84,7 +87,7 @@ function ListCategory() {
             headerClassName: "theme-header",
             sortable: true,
             type: "dateTime",
-            width: 200,
+            width: 240,
             renderCell: (params) => {
                 const date = params.value.toLocaleDateString();
                 const time = params.value.toLocaleTimeString();
@@ -135,7 +138,7 @@ function ListCategory() {
     ];
 
     const handleRemoveListCategory = async () => {
-        toast.promise(dataService.softDeleteListCategory(selectedRow), {
+        toast.promise(adminService.softDeleteListCategory(selectedRow), {
             loading: "Removing...",
             success: () => {
                 setRender(!render);
@@ -154,7 +157,7 @@ function ListCategory() {
     };
 
     const handleRemoveCategory = (deleteId) => {
-        toast.promise(dataService.softDeleteCategoryById(deleteId), {
+        toast.promise(adminService.softDeleteCategoryById(deleteId), {
             loading: "Removing...",
             success: () => {
                 setModalContent({ ...modalContent, isOpen: false });
@@ -172,7 +175,7 @@ function ListCategory() {
 
         const fetchApi = async () => {
             try {
-                const result = await dataService.getCategoryByTitle(
+                const result = await adminService.getCategoryByTitle(
                     e.target.value,
                     page,
                     selected
@@ -218,7 +221,7 @@ function ListCategory() {
         setIsLoadingData(true);
         const fetchApi = async () => {
             try {
-                const result = await dataService.getAllCategories(
+                const result = await adminService.getAllCategories(
                     false,
                     page,
                     selected

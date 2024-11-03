@@ -3,7 +3,7 @@ import styles from "./Dashboard.module.scss";
 import clsx from "clsx";
 import thongKe from "../../assets/images/thongKe.svg";
 import CardStatiscal from "../../component/cardTotal";
-import * as dataApi from "../../api/apiService/dataService";
+import * as adminService from "../../api/apiService/adminService";
 import { useSelector } from "react-redux";
 import stylesList from "../admin/Course/list/List.module.scss";
 import noDataIcon from "../../assets/images/ic_noData.svg";
@@ -38,7 +38,7 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getMonthlyStatistic(
+                const result = await adminService.getMonthlyStatistic(
                     currentMonth,
                     currentYear
                 );

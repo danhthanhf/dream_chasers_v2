@@ -1,7 +1,6 @@
 package com.dreamchasers.recoverbe;
 
-import com.dreamchasers.recoverbe.model.User.Role;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.repository.CourseRepository;
 import com.dreamchasers.recoverbe.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -10,12 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
-
 @SpringBootApplication
 @RequiredArgsConstructor
 public class RecoverBeApplication {
     private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
     private final PasswordEncoder passwordEncoder;
 
     public static void main(String[] args) {
@@ -25,11 +23,7 @@ public class RecoverBeApplication {
 //    @Bean
 //    public CommandLineRunner commandLineRunner() {
 //        return (args) -> {
-//            User admin = User.builder().email("admin@gmail.com").lastName("Nguyen").firstName("Admin").password(passwordEncoder.encode("1234Thanh@")).role(Role.ADMIN).build();
-//            User manager = User.builder().email("manager@gmail.com").lastName("Nguyen").firstName("Manager").password(passwordEncoder.encode("1234Thanh@")).role(Role.MANAGER).build();
-//            User user = User.builder().email("user@gmail.com").lastName("Nguyen").firstName("User").password(passwordEncoder.encode("1234Thanh@")).role(Role.USER).build();
-//            userRepository.save(admin);
-//            userRepository.saveAll(List.of(user, manager, admin));
+//           courseRepository.findAll().stream().peek(course -> course.setAuthor(userRepository.findByEmail("admin@gmail.com").get())).forEach(courseRepository::save);
 //        };
 //    }
 

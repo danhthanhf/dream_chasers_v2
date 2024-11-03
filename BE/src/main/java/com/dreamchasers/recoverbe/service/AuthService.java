@@ -5,13 +5,14 @@ import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.helper.Request.RegisterRequest;
 import com.dreamchasers.recoverbe.jwt.JwtService;
-import com.dreamchasers.recoverbe.model.User.Role;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.User.Role;
+import com.dreamchasers.recoverbe.entity.User.User;
 import com.dreamchasers.recoverbe.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +32,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final UserService userService;
 
 
     private boolean isEmailExist(String email) {
@@ -82,32 +84,34 @@ public class AuthService {
     public ResponseObject authenticate(AuthenticationRequest request) {
         try {
             User user = (User) userDetailsService.loadUserByUsername(request.getEmail());
+
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             user = refreshAccessToken(user);
+
             UserDTO userDTO = transferEntityToDTO(user);
             return ResponseObject.builder().status(HttpStatus.OK).content(userDTO).build();
-        }
-        catch (UsernameNotFoundException ex) {
-            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email không tồn tại!.").build();
-        }
-        catch (BadCredentialsException e) {
-            log.error(e.getMessage());
-            return ResponseObject.builder().status(HttpStatus.UNAUTHORIZED).message("Email hoặc mật khẩu không đúng!.").build();
-        }
-        catch (LockedException e) {
-            log.error(e.getMessage());
-            return ResponseObject.builder().status(HttpStatus.LOCKED).message("Tài khoản đã bị khóa!.").build();
-        }
-        catch (DisabledException e) {
-            log.error(e.getMessage());
-            return ResponseObject.builder().status(HttpStatus.FORBIDDEN).message("Tài khoản đã bị vô hiệu hóa!.").build();
-        }
-        catch (Exception e) {
-            log.error(e.getMessage());
-            return ResponseObject.builder().status(HttpStatus.INTERNAL_SERVER_ERROR).message("Lỗi hệ thống!").build();
-        }
 
+        } catch (UsernameNotFoundException ex) {
+            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Email does not exist!").build();
+        } catch (BadCredentialsException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.UNAUTHORIZED).message("Email or password is incorrect!").build();
+        } catch (LockedException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.LOCKED).message("The account has been locked!").build();
+        } catch (DisabledException e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.FORBIDDEN).message("The account has been disabled!").build();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseObject.builder().status(HttpStatus.INTERNAL_SERVER_ERROR).message("System error!").build();
+        }
     }
+
 
     public ResponseObject sendCode(String email) {
         var user = findUserByEmail(email);

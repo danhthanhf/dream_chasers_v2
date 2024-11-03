@@ -34,8 +34,6 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
     @Bean
     AuthorizationManager<Message<?>> messageAuthorizationManager(MessageMatcherDelegatingAuthorizationManager.Builder messages) {
         messages
-//                .simpDestMatchers("/ws/user/**").hasAnyRole("ADMIN", "MANAGER", "USER")
-//                .simpDestMatchers("/ws/comment/**").hasAnyRole("ADMIN", "MANAGER", "USER")
                 .anyMessage().authenticated();
         return messages.build();
     }

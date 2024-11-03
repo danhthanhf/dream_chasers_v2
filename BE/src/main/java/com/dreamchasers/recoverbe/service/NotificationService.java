@@ -2,9 +2,10 @@ package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.Notification;
-import com.dreamchasers.recoverbe.model.Post.Post;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.Notification;
+import com.dreamchasers.recoverbe.entity.User.User;
+import com.dreamchasers.recoverbe.enums.CoursePostStatus;
+import com.dreamchasers.recoverbe.enums.NotificationType;
 import com.dreamchasers.recoverbe.repository.NotificationRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,14 @@ public class NotificationService {
     private final ConvertService convertService;
     private final EntityManager entityManager;
 
+    public NotificationType getNotificationType(CoursePostStatus status, boolean isCourse) {
+        return switch (status) {
+            case APPROVED -> isCourse ? NotificationType.COURSE_APPROVED : NotificationType.POST_APPROVED;
+            case REJECTED -> isCourse ? NotificationType.COURSE_REJECTED : NotificationType.POST_REJECTED;
+            case PUBLISHED -> isCourse ? NotificationType.COURSE_PUBLISHED : NotificationType.POST_PUBLISHED;
+            default -> isCourse ? NotificationType.COURSE_PENDING : NotificationType.POST_PENDING;
+        };
+    }
 
     public Notification readNotification(UUID id) {
         var notification = notificationRepository.findById(id).orElse(null);
@@ -58,7 +67,7 @@ public class NotificationService {
         var result = userService.getUserByEmail(email);
         if(result.getContent() == null) return result;
         var user = (User) result.getContent();
-        var noti = notificationRepository.findAllByUserEmailAndIsReadOrderByCreatedAtDesc(email, false, PageRequest.of(page, size));
+        var noti = notificationRepository.findAllByRecipientEmailAndIsReadOrderByCreatedAtDesc(email, false, PageRequest.of(page, size));
         return ResponseObject.builder().status(HttpStatus.OK).content(noti).build();
     }
 
@@ -70,7 +79,7 @@ public class NotificationService {
         if(result.getContent() == null) return result;
         var user = (User) result.getContent();
 
-        var notifications = notificationRepository.findAllByUserEmail(user.getEmail(), PageRequest.of(0, 99999));
+        var notifications = notificationRepository.findAllByRecipientEmail(user.getEmail(), PageRequest.of(0, 99999));
 
         if (notifications == null) {
             return ResponseObject.builder().status(HttpStatus.NO_CONTENT).message("Remove all notification successfully").build();
@@ -97,7 +106,7 @@ public class NotificationService {
     }
 
     public ResponseObject readAllNotification(UUID id) {
-        var notifications = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(id, PageRequest.of(0, 999999));
+        var notifications = notificationRepository.findAllByRecipientIdOrderByCreatedAtDesc(id, PageRequest.of(0, 999999));
 
         if (notifications == null) {
             return null;
@@ -111,10 +120,9 @@ public class NotificationService {
                 .build();
     }
 
-
     public ResponseObject getAll(String email, int page, int size) {
-        var pages = notificationRepository.findAllByUserEmail(email, PageRequest.of(page, size, Sort.Direction.DESC, "createdAt"));
-        var totalUnReads = notificationRepository.countByIsReadAndUserEmail(false, email);
+        var pages = notificationRepository.findAllByRecipientEmail(email, PageRequest.of(page, size, Sort.Direction.DESC, "createdAt"));
+        var totalUnReads = notificationRepository.countByIsReadAndRecipientEmail(false, email);
         var result = convertService.convertToNotificationDTO(pages, email, totalUnReads);
         return ResponseObject.builder()
                 .status(HttpStatus.OK)
@@ -122,37 +130,28 @@ public class NotificationService {
                 .build();
     }
 
-    public Notification saveNotification (User fromUser, User toUser, String description, String titleContent, String path, UUID commentId) {
-        var from = "ADMIN";
-        if (fromUser != null) {
-            from = fromUser.getFirstName() + " " + fromUser.getLastName();
-        }
+    public Notification saveNotification (User sender, User recipient, NotificationType type, UUID referenceId, String title, String content, String detailReason) {
         Notification notification = Notification.builder()
-                .user(toUser)
-                .commentId(commentId)
-                .fromUser(from)
-                .img(fromUser != null ? fromUser.getAvatarUrl() : null)
-                .content(description)
-                .TitleContent(titleContent)
-                .path(path)
+                .recipient(recipient)
+                .content(content)
+                .sender(sender)
+                .reasonReject(detailReason)
+                .referenceId(referenceId)
+                .title(title)
+                .type(type)
                 .build();
         notification.setCreatedAt(LocalDateTime.now());
         return notificationRepository.save(notification);
     }
 
-    public void sendToUser(Notification notification, User user) {
+    private void sendToUser(Notification notification, User user) {
         simpMessagingTemplate.convertAndSendToUser(user.getEmail(), "/notification", notification);
     }
 
-    public void saveAndSendToUser(User fromUser, User toUser, String description, String titleContent, String path, UUID commentId) {
-        var noti = saveNotification(fromUser, toUser, description, titleContent, path, commentId);
-        sendToUser(noti, toUser);
+    public void sendNotificationToUser(User sender, User recipient, UUID referenceId, NotificationType type, String title, String content, String detailReason) {
+        var noti = saveNotification(sender, recipient, type, referenceId, title, content, detailReason);
+        sendToUser(noti, recipient);
     }
 
-
-    public void adminSendProcessDataPost(User toUser, Post post) {
-        var noti = saveNotification( null, toUser, "Admin has " + post.getStatus() + " your post", post.getTitle(), post.getTitle(), post.getId());
-        simpMessagingTemplate.convertAndSendToUser(toUser.getEmail(), "/notification", noti);
-    }
 
 }

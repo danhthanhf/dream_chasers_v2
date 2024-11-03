@@ -1,17 +1,13 @@
 package com.dreamchasers.recoverbe.config;
 
 import com.dreamchasers.recoverbe.jwt.JwtFilter;
-import com.dreamchasers.recoverbe.jwt.JwtService;
-import com.dreamchasers.recoverbe.model.User.Role;
-import com.dreamchasers.recoverbe.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
+import com.dreamchasers.recoverbe.entity.User.Role;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -28,12 +24,18 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     @Bean
     public AccessDeniedHandler accessDeniedHandler () {
-        return (request, response, accessDeniedException) -> response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        return (request, response, accessDeniedException) -> {
+            response.getWriter().write("You dont have permission to access this resource");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        };
     }
 
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
-        return (request, response, authenticationEntryPointException) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return (request, response, authenticationEntryPointException) -> {
+            response.getWriter().write("Please login to access this resource");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        };
     }
 
     @Bean

@@ -1,19 +1,26 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.CourseDTO;
+import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
+import com.dreamchasers.recoverbe.entity.User.User;
+import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
+import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.CourseKit.Category;
-import com.dreamchasers.recoverbe.model.CourseKit.Course;
-import com.dreamchasers.recoverbe.model.CourseKit.Section;
+import com.dreamchasers.recoverbe.entity.CourseKit.Course;
+import com.dreamchasers.recoverbe.entity.CourseKit.Section;
+import com.dreamchasers.recoverbe.enums.CoursePostStatus;
+import com.dreamchasers.recoverbe.enums.CoursePrice;
 import com.dreamchasers.recoverbe.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -23,6 +30,72 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final SectionService sectionService;
     private final CategoryService categoryService;
+    private final ConvertService convertService;
+    private final NotificationService notificationService;
+    private final List<CoursePostStatus> availableStatus = List.of(CoursePostStatus.DRAFT, CoursePostStatus.PUBLISHED, CoursePostStatus.PENDING, CoursePostStatus.REJECTED);
+
+    public User getCurrentUser() {
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
+    public Course changeStatus(UUID courseId, StatusChangeDTO statusChangeDTO) {
+        var course = courseRepository.findById(courseId).orElseThrow(() -> new NoSuchElementException("Course does not exist"));
+        if(statusChangeDTO.getStatus() == CoursePostStatus.PUBLISHED && course.getStatus() == CoursePostStatus.DRAFT)
+            course.setStatus(CoursePostStatus.PENDING);
+        else if(statusChangeDTO.getStatus() == CoursePostStatus.REJECTED) {
+            course.setReasonReject(statusChangeDTO.getDetail());
+            course.setStatus(statusChangeDTO.getStatus());
+        }
+        else {
+            course.setReasonReject(null);
+            course.setStatus(statusChangeDTO.getStatus());
+        }
+        return courseRepository.save(course);
+    }
+
+    public ResponseObject changeCourseStatus(UUID courseId, StatusChangeDTO statusChangeDTO) {
+        try {
+            var course = changeStatus(courseId, statusChangeDTO);
+
+            notificationService.sendNotificationToUser(null, course.getAuthor(), null, notificationService.getNotificationType(statusChangeDTO.getStatus(), true), course.getTitle(), "Your course was " + course.getStatus() + " by ADMIN",statusChangeDTO.getDetail());
+
+            return ResponseObject.builder().status(HttpStatus.OK).build();
+        } catch (NoSuchElementException e) {
+            return ResponseObject.builder().message(e.getMessage()).status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    public ResponseObject authorChangeCourseStatus(UUID courseId, CoursePostStatus status) {
+        try {
+            var course = courseRepository.findById(courseId).orElseThrow(() -> new NoSuchElementException("Course does not exist"));
+            course.setStatus(status);
+            if(course.getAuthor() != getCurrentUser()) {
+                return ResponseObject.builder().message("You are not the author of this course").status(HttpStatus.BAD_REQUEST).build();
+            }
+            courseRepository.save(course);
+            return ResponseObject.builder().status(HttpStatus.OK).build();
+        } catch (NoSuchElementException e) {
+            return ResponseObject.builder().message(e.getMessage()).status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    public ResponseObject getByTitle(String title) {
+        var course = courseRepository.findByTitle(title).orElseThrow(() -> new EntityNotFoundException("Course does not exist"));
+
+        var response = convertService.convertToCourseDTO(course);
+        return ResponseObject.builder().content(response).status(HttpStatus.OK).build();
+    }
+
+    public Page<Course> getAllByStatus(CoursePostStatus isPublish, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return courseRepository.findAllByStatusAndDeleted(isPublish, false, pageable);
+    }
+
+    public ResponseObject getAllPublish(int page, int size) {
+        var pageCourse = getAllByStatus(CoursePostStatus.PUBLISHED, page, size);
+        var courses = convertService.convertToPageCourseDTO(pageCourse);
+        return ResponseObject.builder().status(HttpStatus.OK).content(courses).build();
+    }
 
     public ResponseObject getAll(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -62,8 +135,10 @@ public class CourseService {
     public ResponseObject softDeleteList(List<UUID> ids) {
         ids.stream().map(id -> getCourseById(id, false)).forEach(responseObject -> {
             Course course = (Course) responseObject.getContent();
-            course.setDeleted(true);
-            courseRepository.save(course);
+            if(course != null) {
+                courseRepository.save(course);
+                course.setDeleted(true);
+            }
         });
         return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
     }
@@ -78,16 +153,23 @@ public class CourseService {
         return ResponseObject.builder().content(course).status(HttpStatus.OK).build();
     }
 
-    public ResponseObject getAllCourseByCategoryId(String id, boolean deleted, int page, int size) {
-
-        Page<Course> courses;
-        if(Objects.equals(id, "0")) {
-            courses = courseRepository.findAllByDeleted(deleted, PageRequest.of(page, size));
+    public ResponseObject getAllCourseByCategoryId(String status, String categoryId, boolean deleted, int page, int size) {
+        Page<Course> coursePage;
+        if(Objects.equals(categoryId, "0")) { // category == ALL
+            if(Objects.equals(status, "ALL"))
+                coursePage = courseRepository.findAllByDeleted(deleted, PageRequest.of(page, size));
+            else
+                coursePage = courseRepository.findAllByStatusAndDeleted(CoursePostStatus.valueOf(status),deleted, PageRequest.of(page, size));
         }
         else {
-            UUID uuid = UUID.fromString(id);
-            courses = courseRepository.findAllByCategoriesIdAndDeleted(uuid, deleted, PageRequest.of(page, size));
+            UUID uuid = UUID.fromString(categoryId);
+            if (Objects.equals(status, "ALL"))
+                coursePage = courseRepository.findAllByCategoriesIdAndDeleted(uuid, deleted, PageRequest.of(page, size));
+
+            else
+                coursePage = courseRepository.findAllByCategoriesIdAndStatusAndDeleted(uuid,  CoursePostStatus.valueOf(status), deleted, PageRequest.of(page, size));
         }
+        var courses = convertService.convertToPageCourseDTO(coursePage);
         return ResponseObject.builder().status(HttpStatus.OK).message("Get successfully").content(courses).build();
     }
 
@@ -109,27 +191,44 @@ public class CourseService {
         return ResponseObject.builder().status(HttpStatus.OK).content(result).build();
     }
 
+    public Course createStatusForCourse(Course course, CoursePostStatus status) {
+        if(status == CoursePostStatus.PUBLISHED)
+            course.setStatus(CoursePostStatus.PENDING);
+        return course;
+    }
 
     public ResponseObject createCourse(CourseDTO request) {
-        System.out.println(request);
+        if(request.getTitle() == null || request.getCategories() == null) {
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Title or categories cannot be null").build();
+        }
+
         final ResponseObject[] res = new ResponseObject[1];
         courseRepository.findByTitle(request.getTitle()).ifPresentOrElse((course) -> res[0] = ResponseObject.builder().message("Course is already exist!").status(HttpStatus.BAD_REQUEST).build(), () -> {
             var categories = categoryService.getListByName(request.getCategories());
             categoryService.UpdateToTalCourseForList(categories, true);
 
-            var sections = sectionService.createListSectionFromDTO(request.getSections());
-            var totalDuration = sections.stream().mapToInt(Section::getTotalDuration).sum();
 
-            Course newCourse = Course.builder().price(request.getPrice())
+
+            Course newCourse = Course.builder().price(CoursePrice.fromInt(request.getPrice()))
                     .title(request.getTitle())
                     .description(request.getDescription())
                     .discount(request.getDiscount())
                     .thumbnail(request.getThumbnail())
                     .video(request.getVideo())
-                    .totalDuration(totalDuration)
                     .categories(categories)
-                    .sections(sections)
+                    .author(getCurrentUser())
+                    .deleted(false)
                     .build();
+
+            newCourse = createStatusForCourse(newCourse, request.getStatus());
+
+            if(request.getSections() != null && !request.getSections().isEmpty()) {
+                var sections = sectionService.createListSectionFromDTO(request.getSections());
+                var totalDuration = sections.stream().mapToInt(Section::getTotalDuration).sum();
+                newCourse.setTotalDuration(totalDuration);
+                newCourse.setSections(sections);
+            }
+
             courseRepository.save(newCourse);
 
             res[0] = ResponseObject.builder().status(HttpStatus.OK).build();

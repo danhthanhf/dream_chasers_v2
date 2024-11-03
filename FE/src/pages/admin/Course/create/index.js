@@ -7,10 +7,12 @@ import styles from "./CreateCourse.module.scss";
 import clsx from "clsx";
 import fileSelect from "../../../../assets/images/fileSelect.svg";
 import { useEffect, useState } from "react";
-import * as dataService from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
+import * as publicService from "../../../../api/apiService/publicService";
 import { toast } from "sonner";
 import btnClose from "../../../../assets/images/btnClose.svg";
 import ReactQuill from "react-quill";
+import SelectComponent from "../../../../component/select/SelectComponent";
 
 const initFormData = {
     title: "",
@@ -27,6 +29,7 @@ function CreateCourse() {
     const [options, setOptions] = useState([]);
     const [errors, setErrors] = useState({});
     const [isUploading, setIsUploading] = useState(false);
+    const [priceTiers, setPriceTires] = useState([]);
     const [tagSelected, setTagSelected] = useState([]);
     let timerId;
 
@@ -43,7 +46,7 @@ function CreateCourse() {
     const handleFileChange = (e, index, indexSection) => {
         const file = e.target.files[0];
         setIsUploading(true);
-        toast.promise(dataService.uploadFile(file), {
+        toast.promise(publicService.uploadFile(file), {
             loading: "Loading file...",
             success: (result) => {
                 setIsUploading(false);
@@ -91,7 +94,7 @@ function CreateCourse() {
     };
     const handleUpdateVideoCourse = (e) => {
         setIsUploading((prev) => true);
-        toast.promise(dataService.uploadFile(e.target.files[0]), {
+        toast.promise(publicService.uploadFile(e.target.files[0]), {
             loading: "Loading video...",
             success: (result) => {
                 setIsUploading((prev) => false);
@@ -213,7 +216,7 @@ function CreateCourse() {
 
     const validateForm = (formData) => {
         const errors = {};
-        if (!formData.title) errors.title = "Course Name is required.";
+        if (!formData.title) errors.title = "Course name is required.";
         if (!formData.description)
             errors.description = "Description is required.";
         if (!formData.price) errors.price = "Price is required.";
@@ -260,7 +263,7 @@ function CreateCourse() {
         }
 
         const featchApi = async () => {
-            toast.promise(dataService.createCourse(formData), {
+            toast.promise(adminService.createCourse(formData), {
                 loading: "Loading...",
                 success: () => {
                     setFormData(initFormData);
@@ -278,14 +281,29 @@ function CreateCourse() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataService.getAllCategories(
+                const result = await publicService.getAllCategoriesAndPrice(
                     false,
                     0,
                     999999
                 );
-                setOptions(result.content.map((cate) => cate.name));
+                setPriceTires(
+                    result.prices.map((price) => ({
+                        label:
+                            price.value.toLocaleString("vi-VN") +
+                            " (" +
+                            price.name +
+                            ")",
+                        value: price.value.toString(),
+                    }))
+                );
+                setOptions(
+                    result.categories.content.map((cate) => ({
+                        label: cate.name,
+                        value: cate.id,
+                    }))
+                );
             } catch (error) {
-                console.log(error.mess);
+                console.log(error);
             }
         };
         fetchApi();
@@ -306,12 +324,12 @@ function CreateCourse() {
         });
     };
 
-    console.log(formData);
+    console.table(formData);
 
     return (
         <>
             <div className="container flex flex-col justify-center">
-                <div className="wrapMainDash mr-auto">
+                <div className="w-[900px] mx-auto">
                     <h3 className="titleMainDash">Create a new course</h3>
                     <div
                         className={clsx(
@@ -319,14 +337,16 @@ function CreateCourse() {
                             "flex gap-6 flex-col rounded-lg"
                         )}
                     >
-                        <div className={clsx(styles.formField)}>
+                        <div className={clsx(styles.formField, "")}>
                             <input
                                 required
                                 onChange={handleInputChange}
                                 value={formData.title}
                                 name="title"
                                 data-validate
-                                className={clsx(styles.formInput)}
+                                className={clsx(
+                                    "w-full border-gray-300 border-1 rounded-lg transition-all focus-within:border-black input-h focus:outline-none px-2"
+                                )}
                                 type="text"
                             />
                             <label
@@ -377,23 +397,19 @@ function CreateCourse() {
 
                         <div className={clsx("flex")}>
                             <div
-                                className={clsx(styles.formField, "w-1/2 mr-9")}
+                                className={clsx(
+                                    styles.formField,
+                                    "w-1/2 mr-9 input-h"
+                                )}
                             >
                                 <MultiSelect
                                     value={formData.categories}
                                     handleChange={handleSelectChange}
                                     data={options}
                                     maxValues={3}
+                                    title="Category"
                                 />
 
-                                <label
-                                    className={clsx(
-                                        styles.formLabel,
-                                        "text-black"
-                                    )}
-                                >
-                                    Category
-                                </label>
                                 {errors.categories && (
                                     <div className="text-red-500 mt-1 text-sm ml-1">
                                         {errors.categories}
@@ -401,17 +417,19 @@ function CreateCourse() {
                                 )}
                             </div>
                             <div className={clsx(styles.formField, "w-1/2")}>
-                                <input
-                                    name="price"
-                                    onChange={handleInputChange}
-                                    value={formData.price}
-                                    min="0"
-                                    className={clsx(styles.formInput)}
-                                    type="number"
-                                />
-                                <label className={clsx(styles.formLabel)}>
-                                    Price
-                                </label>
+                                <div className="input-h">
+                                    <SelectComponent
+                                        value={formData.price}
+                                        data={priceTiers}
+                                        handleChange={(e) => {
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                price: e,
+                                            }));
+                                        }}
+                                    ></SelectComponent>
+                                </div>
+
                                 {errors.price && (
                                     <div className="text-red-500 mt-1 text-sm ml-1">
                                         {errors.price}
@@ -452,7 +470,7 @@ function CreateCourse() {
                                     id="thumbnail"
                                     type="file"
                                     hidden
-                                    accept=".jpg, .jpeg, .png"
+                                    accept=".jpg, .jpeg, .png, .webp"
                                 />
                             </div>
                             <div
@@ -610,7 +628,7 @@ function CreateCourse() {
                                                         }}
                                                         value={section.title}
                                                         className={clsx(
-                                                            styles.formInput
+                                                            "transition-all w-full rounded-lg px-2  input-h border-1 border-gray-300 focus-within:border-black outline-none"
                                                         )}
                                                         type="text"
                                                     />

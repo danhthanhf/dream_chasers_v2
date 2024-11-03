@@ -1,13 +1,16 @@
 package com.dreamchasers.recoverbe.controller.Private;
 
 import com.dreamchasers.recoverbe.dto.ResetPasswordDTO;
+import com.dreamchasers.recoverbe.helper.Request.RegisterRequest;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
+import com.dreamchasers.recoverbe.service.AuthService;
 import com.dreamchasers.recoverbe.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,12 +19,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final AuthService authService;
 
-    @PutMapping("/resetPassword/{email}")
-    public ResponseEntity<ResponseObject> resetPassword(@RequestBody ResetPasswordDTO passwordDTO, @PathVariable String email) {
-        var result = userService.adminUpdatePasswordForUser(passwordDTO, email);
-        return ResponseEntity.status(result.getStatus()).body(result);
-    }
 
     @GetMapping("/getAllUserAndRole")
     public ResponseEntity<ResponseObject> getAllRole(@RequestParam(defaultValue = "false") boolean isDeleted, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
@@ -64,8 +63,21 @@ public class UserController {
 
     @GetMapping("/search")
     public ResponseEntity<ResponseObject> getUserByNameAndEmail(@RequestParam(value = "name") String name, @RequestParam String role, @RequestParam(defaultValue = "false") boolean isDeleted,
-                                                        @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+                                                                @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         var result = userService.getUserByNameAndEmail(name, role, isDeleted, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+
+    @PostMapping("/create")
+    public ResponseEntity<ResponseObject> createUser(@RequestBody RegisterRequest request) {
+        var result = authService.register(request);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PutMapping("/resetPassword/{email}")
+    public ResponseEntity<ResponseObject> resetPassword(@RequestBody ResetPasswordDTO passwordDTO, @PathVariable String email) {
+        var result = userService.adminUpdatePasswordForUser(passwordDTO, email);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

@@ -27,9 +27,9 @@ function Dropdown({ elementClick, ...props }) {
     };
 
     return (
-        <div className="text-right flex items-center">
+        <div className="z-10 text-right flex items-center">
             <Menu as="div" className="relative text-left flex ml-2">
-                <Menu.Button className="inline-flex items-center w-full justify-center rounded-md text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
+                <Menu.Button className="inline-flex items-center w-full justify-center rounded-md text-sm font-medium text-white focus:outline-none focus-visible:ring-2  focus-visible:ring-white/75">
                     {elementClick
                         ? elementClick
                         : "Options" +
@@ -52,7 +52,7 @@ function Dropdown({ elementClick, ...props }) {
                     <Menu.Items
                         className={clsx(
                             styles.itemClick,
-                            "absolute ivide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none max-sm:-right-1/2 max-sm:absolute max-lg:-r-20 md:-right-2 "
+                            "absolute ivide-y divide-gray-100 rounded-md bg-custom-1 shadow-lg ring-1 ring-black/5 focus:outline-none max-sm:-right-1/2 max-sm:absolute max-lg:-r-20 md:-right-2 "
                         )}
                     >
                         <div className="px-4 py-1 w-max">
@@ -187,7 +187,7 @@ function Dropdown({ elementClick, ...props }) {
 
                         <div className="h-px bg-gray-200" />
                         <div className="px-1 py-1">
-                            <Link to={"/me/instructor-dasboard"}>
+                            <Link to={"/instructor-dashboard"}>
                                 <Menu.Item>
                                     {({ active }) => (
                                         <button
@@ -277,7 +277,7 @@ function Dropdown({ elementClick, ...props }) {
 
                         <div className="h-px bg-gray-200" />
                         <div className="px-1 py-1 ">
-                            <Link to={"/me/posts/publish"}>
+                            <Link to={"/me/posts"}>
                                 <Menu.Item>
                                     {({ active }) => (
                                         <button
@@ -289,33 +289,35 @@ function Dropdown({ elementClick, ...props }) {
                                         >
                                             {active ? (
                                                 <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    strokeWidth={1.5}
+                                                    strokeWidth="2.5"
                                                     stroke="currentColor"
-                                                    className="mr-2 w-6 h-6"
+                                                    viewBox="0 0 24 24"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    aria-hidden="true"
+                                                    className="w-[22px] h-[22px] mr-2"
                                                 >
                                                     <path
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
-                                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                                                    />
+                                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                                                    ></path>
                                                 </svg>
                                             ) : (
                                                 <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
                                                     fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    strokeWidth={1.5}
+                                                    strokwidth="1.5"
                                                     stroke="currentColor"
-                                                    className="mr-2 w-6 h-6"
+                                                    viewBox="0 0 24 24"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    aria-hidden="true"
+                                                    className="w-[22px] h-[22px] mr-2"
                                                 >
                                                     <path
                                                         strokeLinecap="round"
                                                         strokeLinejoin="round"
-                                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                                                    />
+                                                        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                                                    ></path>
                                                 </svg>
                                             )}
                                             My Post
@@ -323,7 +325,6 @@ function Dropdown({ elementClick, ...props }) {
                                     )}
                                 </Menu.Item>
                             </Link>
-
                             <Link to={"/new-post"}>
                                 <Menu.Item>
                                     {({ active }) => (

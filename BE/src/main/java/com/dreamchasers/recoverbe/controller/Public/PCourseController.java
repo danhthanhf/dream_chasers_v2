@@ -24,7 +24,13 @@ public class PCourseController {
     @GetMapping("/getAll")
     public ResponseEntity<ResponseObject> getAllByPageable(@RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "5") int size) {
-        var result = courseService.getAll(page, size);
+        var result = courseService.getAllPublish(page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @GetMapping("")
+    public ResponseEntity<ResponseObject> getByTitle(@RequestParam String title){
+        var result = courseService.getByTitle(title);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 }

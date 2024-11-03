@@ -1,25 +1,34 @@
 @import "../../../../component/globalStyles/GlobalStyles.scss";
 .formInput {
-    border: 0px;
+    border: 1px solid;
+    border-color: #d1d5db;
     background: none;
     margin: 0px;
     -webkit-tap-highlight-color: transparent;
     display: block;
     min-width: 0px;
     width: 100%;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 250ms;
 
     animation-duration: 10ms;
     line-height: 23px;
     font-weight: 400;
     border-radius: 8px;
     padding: 16.5px 14px;
-    border: 1px solid $border-color;
+    outline: none;
+
+    &:focus {
+        border-color: black;
+    }
 
     &:focus + .formLabel {
         top: 0;
         font-weight: 600;
         font-size: 14px;
         background-color: white;
+
         color: black;
     }
 
@@ -240,7 +249,7 @@
 }
 
 .thumbnailImg {
-    height: 231px;
+    height: 250px;
     margin: auto;
 }
 

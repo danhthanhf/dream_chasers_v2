@@ -9,7 +9,7 @@ import {
     ChevronRightIcon,
     ChevronUpDownIcon,
 } from "@heroicons/react/20/solid";
-import * as dataApi from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
 import Modal from "../../../../component/modal";
 import avatar from "../../../../assets/images/avatar_1.jpg";
 import Datepicker from "react-tailwindcss-datepicker";
@@ -33,7 +33,7 @@ function ListInvoice() {
 
     const handleRemoveInvoice = () => {
         const fetchApi = async () => {
-            toast.promise(dataApi.softDeleteInvoice(deleteId), {
+            toast.promise(adminService.softDeleteInvoice(deleteId), {
                 loading: "Removing...",
                 success: (data) => {
                     setInvoices(data.content.content);
@@ -53,7 +53,7 @@ function ListInvoice() {
     const handleSearchInputChange = async (e) => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.searchInvoice(
+                const result = await adminService.searchInvoice(
                     e.target.value,
                     page,
                     selectedSize
@@ -97,7 +97,7 @@ function ListInvoice() {
     const fetchInvoicesUpdate = async () => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllInvoiceByPage(
+                const result = await adminService.getAllInvoiceByPage(
                     page,
                     selectedSize
                 );
@@ -118,7 +118,7 @@ function ListInvoice() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllInvoice();
+                const result = await adminService.getAllInvoice();
                 setInvoices(result.content.content);
                 setTotalData(result.content.totalElements);
             } catch (error) {
@@ -144,7 +144,7 @@ function ListInvoice() {
         if (newValue.startDate === null && newValue.endDate === null) {
             const fetchApi = async () => {
                 try {
-                    const result = await dataApi.getAllInvoice();
+                    const result = await adminService.getAllInvoice();
                     setInvoices(result.content.content);
                     console.log(result);
                 } catch (error) {
@@ -160,7 +160,7 @@ function ListInvoice() {
         const enđDate = tempEnd.format("YYYY-MM-DDTHH:mm:ss.SSS");
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getInvoicesByDate(
+                const result = await adminService.getInvoicesByDate(
                     startDate,
                     enđDate,
                     page,

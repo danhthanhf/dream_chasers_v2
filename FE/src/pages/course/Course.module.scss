@@ -94,7 +94,7 @@
 }
 
 .courseDetails {
-    padding: 10px 40px;
+    padding: 10px 16px;
     align-items: center;
     font-size: 16px;
     font-weight: 400;
@@ -185,6 +185,7 @@
     display: flex;
     font-size: 14px;
     align-items: center;
+    font-weight: 300;
     svg {
         margin-right: 14px;
         width: 18px;
@@ -208,7 +209,7 @@
 
 .sticky {
     position: sticky;
-    top: 132px;
+    top: 66px;
     overflow: hidden;
 }
 

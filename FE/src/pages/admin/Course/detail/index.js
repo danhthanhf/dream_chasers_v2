@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react"; // This imports the useState
 import styles from "../../../course/detail/DetailCourse.module.scss";
 import { Link, useParams } from "react-router-dom";
 import clsx from "clsx";
-import * as dataApi from "../../../../api/apiService/dataService.js";
+import * as adminService from "../../../../api/apiService/adminService";
+import * as publicService from "../../../../api/apiService/publicService";
 import logoPage from "../../../../assets/images/logo.png";
 import { useSelector } from "react-redux";
 import Comment from "../../../../component/comment/index.js";
@@ -174,7 +175,7 @@ function AdminDetailCourse() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const data = await dataApi.getCourseById(id);
+                const data = await publicService.getCourseById(id);
                 const course = data.content;
                 const lessonFirst = course.sections[0]?.lessons[0];
                 const video = lessonFirst?.video;

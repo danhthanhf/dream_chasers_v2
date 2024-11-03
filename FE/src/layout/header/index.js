@@ -5,11 +5,11 @@ import avatar from "../../assets/images/avatar_25.jpg";
 import { useNavigate } from "react-router-dom";
 import styles from "./Header.module.scss";
 import clsx from "clsx";
-import Dropdown from "../../component/dropDown";
+import Dropdown from "../../component/dropDown/index";
 import { useDispatch, useSelector } from "react-redux";
 import NotificationItem from "../../component/notificationItem";
-import useNotificationWebSocket from "../../component/useNotificationWebSocket";
-import * as userApi from "../../api/apiService/authService";
+import useNotificationWebSocket from "../../component/notificationWebSocket";
+import * as authService from "../../api/apiService/authService";
 import notificationSlice from "../../redux/reducers/notificationSlice";
 import SearchBar from "../../component/search";
 
@@ -33,10 +33,13 @@ export default function Header() {
         if (!user) return;
         const fetchApi = async () => {
             try {
-                const result = await userApi.getAllNotification(user.email, {
-                    page: 0,
-                    size: 5,
-                });
+                const result = await authService.getAllNotification(
+                    user.email,
+                    {
+                        page: 0,
+                        size: 5,
+                    }
+                );
                 dispatch(notificationSlice.actions.init(result));
             } catch (error) {
                 console.log(error);
@@ -57,11 +60,11 @@ export default function Header() {
         navigate("/login");
     };
     return (
-        <div className="z-50 relative">
+        <div className="z-10 relative">
             <div className=" flex justify-center">
                 <div
                     className={clsx(
-                        `z-50 ${styles.boxShadow} px-4 md:px-8 rounded-b-xl bg-custom z-header sm:w-full items-center fixed flex gap-5 justify-between lg:px-16 sm:px-8 py-2.5 text-sm leading-5 border-b border-gray-100 border-solid  lg:w-[1200px] `
+                        `${styles.boxShadow} px-4 md:px-8 rounded-b-xl bg-custom z-header sm:w-full items-center fixed flex gap-5 justify-between lg:px-16 sm:px-8 py-2.5 text-sm leading-5 border-b border-gray-100 border-solid  lg:w-[1200px] `
                     )}
                 >
                     <div className="flex  gap-5 justify-between self-start text-neutral-800">
@@ -75,26 +78,12 @@ export default function Header() {
                         </Link>
 
                         <nav className="flex gap-4 justify-between my-auto max-sm:hidden">
-                            <Link
-                                className={`nav-header ${
-                                    window.location.pathname === "/"
-                                        ? "nav-header-active"
-                                        : ""
-                                }`}
-                                to="/"
-                            >
+                            <Link className={`nav-header`} to="/">
                                 Home
                             </Link>
                         </nav>
                         <nav className="flex gap-4 justify-between my-auto">
-                            <Link
-                                className={`nav-header ${
-                                    window.location.pathname === "/"
-                                        ? "nav-header-active"
-                                        : ""
-                                }`}
-                                to="/posts"
-                            >
+                            <Link className={`nav-header `} to="/posts">
                                 Post
                             </Link>
                         </nav>
@@ -136,7 +125,7 @@ export default function Header() {
                                 <div
                                     className={clsx(
                                         styles.notification,
-                                        "flex items-center"
+                                        "flex relative items-center"
                                     )}
                                 >
                                     <NotificationItem

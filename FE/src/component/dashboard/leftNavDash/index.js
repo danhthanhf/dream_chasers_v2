@@ -1,3 +1,4 @@
+import Ink from "react-ink";
 import { Button } from "@nextui-org/button";
 import styles from "./LeftNavDash.module.scss";
 import clsx from "clsx";
@@ -6,8 +7,8 @@ import icCourse from "../../../assets/images/icCourse.svg";
 import { Link } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
 import { useState } from "react";
-import { useSelector } from "react-redux";
-import { adminMenuSelector } from "../../../redux/selector";
+import { useDispatch, useSelector } from "react-redux";
+import navSlice from "../../../redux/reducers/navSlice";
 
 const SubItem = ({ path, title, isSelect }) => {
     var name = "List";
@@ -31,9 +32,9 @@ const SubItem = ({ path, title, isSelect }) => {
 function LeftNavDash() {
     const [close, setClose] = useState(false);
     const [listOpen, setListOpen] = useState([]);
-    const [subOpen, setSubOpen] = useState();
     const [handleApp, setHandleApp] = useState(false);
-    const showMenu = useSelector(adminMenuSelector);
+    const navShow = useSelector((state) => state.nav.adminShow);
+    const dispatch = useDispatch();
 
     const handleOnSub = (e) => {
         const id = e.currentTarget.id;
@@ -43,87 +44,91 @@ function LeftNavDash() {
             setListOpen([...listOpen, id]);
         }
     };
-    const subItemClickHandle = (e) => {
-        var element = e.currentTarget;
-        element.classList.toggle(clsx(styles.active));
-
-        switch (element.id) {
-            case "list":
-                break;
-            default:
-                break;
-        }
-    };
-
-    const handleCloseNavBar = () => {
-        setClose(!close);
-    };
 
     return (
         <div
             className={clsx(
-                styles.Wrapper,
-                "lg:sticky sm:fixed max-sm:fixed md:fixed lg:top-[68px] z-header sm:-left-280px",
+                "border-[#e9ecee] border-r-1 transition-all h-full max-sm:fixed md:fixed z-header bg-white",
                 {
-                    [styles.close]: close,
-                    "sm:hidden max-sm:hidden": showMenu,
+                    [styles.close]: !navShow,
+                    "w-[74px]": !navShow,
+                    "w-[220px]": navShow,
                 }
             )}
         >
             <div
                 className={clsx(styles.btnClose, "b-shadow")}
-                onClick={handleCloseNavBar}
+                onClick={() => dispatch(navSlice.actions.toggleAdminShow())}
             >
-                {!close && <ChevronLeftIcon></ChevronLeftIcon>}
-                {close && <ChevronRightIcon></ChevronRightIcon>}
+                {navShow && <ChevronLeftIcon></ChevronLeftIcon>}
+                {!navShow && <ChevronRightIcon></ChevronRightIcon>}
             </div>
             <nav className={clsx(styles.container)}>
                 <div className={clsx(styles.sectionNav)}>
                     <li
                         className={clsx(styles.title, {
-                            [styles.close]: close,
+                            [styles.close]: !navShow,
                         })}
                     >
                         OVERVIEW
                     </li>
-                    <Button
-                        className={clsx(styles.listItem, "bg-white w-full")}
-                        onClick={() => setHandleApp(!handleApp)}
+
+                    <Link
+                        onClick={() =>
+                            setListOpen((prev) => {
+                                if (listOpen.includes("APP")) {
+                                    return [...prev.filter((i) => i !== "APP")];
+                                } else return [...prev, "APP"];
+                            })
+                        }
+                        className={clsx(
+                            "relative flex items-center h-12 rounded-lg",
+                            {
+                                "text-[#0aab75]": listOpen.includes("APP"),
+                                "text-[#677785]": !listOpen.includes("APP"),
+                                "px-2": !navShow,
+                                "px-6": navShow,
+                            }
+                        )}
+                        to="/admin"
                     >
-                        <Link className={clsx(styles.actionLink)} to="/admin">
-                            <span className={clsx(styles.icon)}>
-                                <img src={appDash} alt="" />
-                            </span>
-                            <span
-                                className={clsx(
-                                    styles.nameAction,
-                                    styles.label,
-                                    {
-                                        "text-[#00a76f]": handleApp,
-                                    }
-                                )}
-                            >
-                                App
-                            </span>
-                        </Link>
-                    </Button>
+                        <Ink></Ink>
+                        <span className={clsx(styles.icon)}>
+                            <img src={appDash} alt="" />
+                        </span>
+                        <span
+                            className={clsx(styles.nameAction, styles.label, {
+                                "text-[#00a76f]": handleApp,
+                            })}
+                        >
+                            App
+                        </span>
+                    </Link>
                 </div>
                 <div className={clsx(styles.sectionNav)}>
                     <li
                         className={clsx(styles.title, {
-                            [styles.close]: close,
+                            [styles.close]: !navShow,
                         })}
                     >
                         Manager
                     </li>
                     <div className={clsx(styles.listItem)}>
-                        <Button
+                        <li
                             id="userLink"
-                            className={clsx(styles.actionLink, "w-full px-4", {
-                                [styles.active]: listOpen.includes("userLink"),
-                            })}
+                            className={clsx(
+                                styles.actionLink,
+                                "w-full relative",
+                                {
+                                    "px-2": !navShow,
+                                    "px-6": navShow,
+                                    [styles.active]:
+                                        listOpen.includes("userLink"),
+                                }
+                            )}
                             onClick={handleOnSub}
                         >
+                            <Ink></Ink>
                             <span className={clsx(styles.icon)}>
                                 {listOpen.includes("userLink") ? (
                                     <svg
@@ -201,12 +206,12 @@ function LeftNavDash() {
                                     ></path>
                                 </svg>
                             )}
-                        </Button>
+                        </li>
                         {listOpen.includes("userLink") && (
                             <div
                                 id="subUser"
                                 className={clsx(styles.subContent, {
-                                    "d-block": !close,
+                                    "d-block": navShow,
                                 })}
                             >
                                 <ul>
@@ -225,13 +230,16 @@ function LeftNavDash() {
                                 </ul>
                             </div>
                         )}
-                        <Button
+                        <li
                             id="postLink"
-                            className={clsx(styles.actionLink, {
+                            className={clsx(styles.actionLink, "relative", {
+                                "px-2": !navShow,
+                                "px-6": navShow,
                                 [styles.active]: listOpen.includes("postLink"),
                             })}
                             onClick={handleOnSub}
                         >
+                            <Ink></Ink>
                             <span className={clsx(styles.icon)}>
                                 <svg
                                     fill="none"
@@ -287,12 +295,12 @@ function LeftNavDash() {
                                     ></path>
                                 </svg>
                             )}
-                        </Button>
+                        </li>
                         {listOpen.includes("postLink") && (
                             <div
                                 id="subPost"
                                 className={clsx(styles.subContent, {
-                                    "d-block": !close,
+                                    "d-block": navShow,
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
@@ -303,18 +311,17 @@ function LeftNavDash() {
                             </div>
                         )}
 
-                        <Button
+                        <li
                             onClick={handleOnSub}
                             id="courseLink"
-                            className={clsx(
-                                styles.actionLink,
-                                "bg-white w-full",
-                                {
-                                    [styles.active]:
-                                        listOpen.includes("courseLink"),
-                                }
-                            )}
+                            className={clsx(styles.actionLink, "relative", {
+                                "px-2": !navShow,
+                                "px-6": navShow,
+                                [styles.active]:
+                                    listOpen.includes("courseLink"),
+                            })}
                         >
+                            <Ink></Ink>
                             <span className={clsx(styles.icon)}>
                                 <img className="ml-0.5" src={icCourse} alt="" />
                             </span>
@@ -357,12 +364,12 @@ function LeftNavDash() {
                                     ></path>
                                 </svg>
                             )}
-                        </Button>
+                        </li>
                         {listOpen.includes("courseLink") && (
                             <div
                                 id="subCourse"
                                 className={clsx(styles.subContent, {
-                                    "d-block": !close,
+                                    "d-block": navShow,
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
@@ -382,18 +389,17 @@ function LeftNavDash() {
                             </div>
                         )}
 
-                        <Button
+                        <li
                             id="categoryLink"
-                            className={clsx(
-                                styles.actionLink,
-                                "bg-white w-full",
-                                {
-                                    [styles.active]:
-                                        listOpen.includes("categoryLink"),
-                                }
-                            )}
+                            className={clsx(styles.actionLink, "relative", {
+                                "px-2": !navShow,
+                                "px-6": navShow,
+                                [styles.active]:
+                                    listOpen.includes("categoryLink"),
+                            })}
                             onClick={handleOnSub}
                         >
+                            <Ink></Ink>
                             <span className={clsx(styles.icon)}>
                                 <svg
                                     className="transform-none"
@@ -445,12 +451,12 @@ function LeftNavDash() {
                                     ></path>
                                 </svg>
                             )}
-                        </Button>
+                        </li>
                         {listOpen.includes("categoryLink") && (
                             <div
                                 id="subCategory"
                                 className={clsx(styles.subContent, {
-                                    "d-block": close === false,
+                                    "d-block": navShow,
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>
@@ -469,14 +475,21 @@ function LeftNavDash() {
                                 </ul>
                             </div>
                         )}
-                        <Button
+                        <li
                             id="invoiceLink"
-                            className={clsx(styles.actionLink, {
-                                [styles.active]:
-                                    listOpen.includes("invoiceLink"),
-                            })}
+                            className={clsx(
+                                styles.actionLink,
+                                "relative",
+                                {
+                                    "px-2": !navShow,
+                                    "px-6": navShow,
+                                    [styles.active]:
+                                        listOpen.includes("invoiceLink"),
+                                }
+                            )}
                             onClick={handleOnSub}
                         >
+                            <Ink></Ink>
                             <span className={clsx(styles.icon)}>
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -531,12 +544,12 @@ function LeftNavDash() {
                                     ></path>
                                 </svg>
                             )}
-                        </Button>
+                        </li>
                         {listOpen.includes("invoiceLink") && (
                             <div
                                 id="subInvoice"
                                 className={clsx(styles.subContent, {
-                                    "d-block": close === false,
+                                    "d-block": navShow,
                                 })}
                             >
                                 <ul className={clsx(styles.subList)}>

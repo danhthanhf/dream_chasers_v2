@@ -4,6 +4,21 @@ import publicInstance, {
     userInstance,
 } from "../instance";
 
+export const changeStatusPost = async (postId, status) => {
+    try {
+        const res = await userInstance.put(
+            `/post/change-status/${postId}`,
+            status,
+            {
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+        return res;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const getAllUnread = async (email, pagination) => {
     try {
         const result = await userInstance.get(
@@ -72,8 +87,8 @@ export const register = async ({
     otp,
 }) => {
     try {
-        const res = await publicInstance.post(
-            "/user/register",
+        const res = await privateInstance.post(
+            "/user/create",
             {
                 firstName,
                 lastName,
@@ -84,7 +99,7 @@ export const register = async ({
                 "content-type": "application/json",
             }
         );
-        return res;
+        return res.content;
     } catch (error) {
         return Promise.reject(error);
     }
@@ -367,6 +382,7 @@ export const readNotification = async (email, id) => {
         return Promise.reject(error);
     }
 };
+
 export const readAllNotifications = async (email) => {
     if (email.includes("@")) {
         email = email.substring(0, email.lastIndexOf("@"));
@@ -377,6 +393,7 @@ export const readAllNotifications = async (email) => {
         return Promise.reject(error);
     }
 };
+
 export const removeAllNotifications = async (email) => {
     try {
         return await userInstance.delete(
@@ -387,15 +404,6 @@ export const removeAllNotifications = async (email) => {
     }
 };
 
-export const getPaymentVNPAY = async ({ method, email, courseId }) => {
-    try {
-        return await userInstance.get(
-            `create_payment/${method}/${email}/${courseId}`
-        );
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
 
 export const getListCourse = async (email) => {
     try {
@@ -424,7 +432,6 @@ export const getAllUserAndRole = async (
         const result = await privateInstance.get(
             `/user/getAllUserAndRole?isDeleted=${isDelete}&page=${page}&size=${selected}`
         );
-
         return result.content;
     } catch (error) {
         return Promise.reject(error);
@@ -439,9 +446,9 @@ export const createPost = async (post, email) => {
     }
 };
 
-export const updatePost = async (post, email) => {
+export const updatePost = async (post) => {
     try {
-        return await userInstance.put(`/${email}/post/update`, post);
+        return await userInstance.put(`/posts/update/${post.id}`, post);
     } catch (error) {
         return Promise.reject(error);
     }

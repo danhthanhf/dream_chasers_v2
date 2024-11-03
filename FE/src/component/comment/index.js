@@ -6,7 +6,7 @@ import avatar from "../../assets/images/avatar_25.jpg";
 import { over } from "stompjs";
 import SockJS from "sockjs-client";
 import { useSelector } from "react-redux";
-import * as dataApi from "../../api/apiService/dataService";
+import * as publicService from "../../api/apiService/publicService";
 import * as userApi from "../../api/apiService/authService";
 import moment from "moment";
 import { toast } from "sonner";
@@ -72,7 +72,7 @@ export default function Comment({
                     connect();
                     isFirstRender.current = false;
                 }
-                const result = await dataApi.getComments(
+                const result = await publicService.getComments(
                     `/lesson/${lessonId}/comments?page=${quantityComment.page}&size=${quantityComment.size}`
                 );
                 setComments(result.content.content);
@@ -98,7 +98,6 @@ export default function Comment({
                       path: `/course/detail/${courseId}/openComment`,
                   })
                 : (data = { ...comment });
-
 
             stompClient.send(
                 `/app/comment/lesson/${lessonId}`,
@@ -163,7 +162,7 @@ export default function Comment({
         const fetchApi = async () => {
             try {
                 await userApi.removeCommentById(userInfo.email, cmtId);
-                const result = await dataApi.getComments(
+                const result = await publicService.getComments(
                     `/lesson/${lessonId}/comments?pae=${quantityComment.page}&size=${quantityComment.size}`
                 );
                 setComments(result.content.content);

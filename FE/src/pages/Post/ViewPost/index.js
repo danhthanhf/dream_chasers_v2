@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import * as dataService from "../../../api/apiService/dataService";
+import * as publicService from "../../../api/apiService/publicService";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { over } from "stompjs";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -8,11 +8,21 @@ import { useSelector } from "react-redux";
 import InputComponent from "../../../component/InputComponent";
 import * as userService from "../../../api/apiService/authService";
 import SockJS from "sockjs-client";
-import { Menu, Transition } from "@headlessui/react";
-import { getTimeElapsed } from "../../../component/Ultil";
+import { getTimeElapsed } from "../../../util/index";
 import { sessionExpired } from "../../../api/instance";
 import PaginationItem from "../../../component/Pagination";
 import ListPost from "../../../component/ListPostItem";
+import editIcon from "../../../assets/images/edit.svg";
+import { userSelector } from "../../../redux/selector";
+import { Menu, Transition } from "@headlessui/react";
+import {
+    ArchiveBoxXMarkIcon,
+    ChevronDownIcon,
+    PencilIcon,
+    Square2StackIcon,
+    TrashIcon,
+} from "@heroicons/react/16/solid";
+import Ink from "react-ink";
 
 const onError = (err) => {
     console.log(err);
@@ -33,9 +43,12 @@ function formatDate(date) {
 
 var stompClient = null;
 
-const ViewPost = () => {
+const ViewPost = ({ adminView = false }) => {
     const { title } = useParams();
-    const userInfo = useSelector((state) => state.login.user);
+    const location = useLocation();
+    const hasView = location.pathname.includes("/view");
+
+    const userInfo = useSelector(userSelector);
     const [post, setPost] = useState({});
     const [comments, setComments] = useState([]);
     const [listViewSubComment, setListViewSubComment] = useState([]);
@@ -62,12 +75,10 @@ const ViewPost = () => {
     });
     const [recentPosts, setRecentPosts] = useState([]);
     const [listOpenSubComment, setListOpenSubComment] = useState([]);
-    const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const watchParam = searchParams.get("watch");
     const containerCommentRef = useRef(null);
     const firstRender = useRef(false);
-    const isMounted = useRef(true);
 
     const handleSavePost = async () => {
         toast.promise(userService.toggleSavePost(post.id, user.email), {
@@ -149,7 +160,7 @@ const ViewPost = () => {
         const fetchApi = async () => {
             try {
                 await userService.removeCommentById(userInfo.email, cmtId);
-                const result = await dataService.getComments(
+                const result = await publicService.getComments(
                     `/post/${post.id}?page=${pagination.page}&size=${pagination.size}`
                 );
                 setComments(result.content.content);
@@ -249,12 +260,12 @@ const ViewPost = () => {
     };
 
     const recordView = (postId) => {
-        dataService.recordViewForPost(postId);
+        publicService.recordViewForPost(postId);
     };
 
     const getRencentPost = async () => {
         try {
-            const result = await dataService.getPosts(0, 4);
+            const result = await publicService.getPosts(0, 4);
 
             setRecentPosts(result.posts);
         } catch (error) {
@@ -262,15 +273,31 @@ const ViewPost = () => {
         }
     };
 
+    const handleChangeStatus = (status) => {
+        if (status === post.status) return;
+        toast.promise(userService.changeStatusPost(post.id, status), {
+            loading: "Loading...",
+            success: (response) => {
+                setPost({ ...post, status: response.content.status });
+                return status + " post successfully";
+            },
+            error: (error) => {
+                console.log(error.message);
+                return "Server error";
+            },
+        });
+    };
+
     useEffect(() => {
         var timer = null;
         const fetchApi = async () => {
             try {
-                const result = await dataService.getPostByTitle(
+                const result = await publicService.getPostByTitle(
                     title,
                     watchParam,
                     pagination
                 );
+                console.log("🚀 ~ fetchApi ~ title:", title);
                 const formatCreatedAt = formatDate(result.content.createdAt);
                 setPagination((prev) => {
                     return {
@@ -308,7 +335,7 @@ const ViewPost = () => {
 
     const getMoreComments = async () => {
         try {
-            const result = await dataService.getCommentByPostId(
+            const result = await publicService.getCommentByPostId(
                 post.id,
                 pagination
             );
@@ -341,14 +368,113 @@ const ViewPost = () => {
         });
     };
 
+    const formatShowStatusEdit = (status) => {
+        if (status === "APPROVED") return "Published";
+        if (status === "DRAFT") return "Draft";
+        if (status === "PENDING") return "Pending";
+        return status;
+    };
     return (
         <>
+            {hasView && userInfo?.email === post?.email && (
+                <div className="flex justify-end mx-10 mt-10 mb-4 items-center">
+                    <Link
+                        to={`/posts/${post.title}/edit`}
+                        className="rounded-full px-2 py-2 transition-all cursor-pointer hover:bg-gray-200 mr-4"
+                    >
+                        <img
+                            className="w-5 h-5 text-gray-500"
+                            src={editIcon}
+                            alt="edit"
+                        />
+                    </Link>
+                    <div className="text-right">
+                        <Menu as="div" className="relative text-left flex ml-2">
+                            <Menu.Button className=" inline-flex items-center gap-2 rounded-md bg-gray-800 py-1.5 px-3 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:outline-none data-[hover]:bg-gray-700 data-[open]:bg-gray-700 data-[focus]:outline-1 data-[focus]:outline-white relative">
+                                <Ink></Ink>
+                                {formatShowStatusEdit(post.status)}
+                                <ChevronDownIcon className="size-4 fill-white/60" />
+                            </Menu.Button>
+                            <Transition
+                                as={Fragment}
+                                enter="transition ease-out duration-100"
+                                enterFrom="transform opacity-0 scale-95"
+                                enterTo="transform opacity-100 scale-100"
+                                leave="transition ease-in duration-75"
+                                leaveFrom="transform opacity-100 scale-100"
+                                leaveTo="transform opacity-0 scale-95"
+                            >
+                                <Menu.Items
+                                    className={clsx(
+                                        "w-40 z-10 absolute ivide-y divide-gray-100 rounded-md bg-custom-1 shadow-lg ring-1 ring-black/5 focus:outline-none top-full -left-[35px]"
+                                    )}
+                                >
+                                    <div className="px-2 py-2 flex flex-col gap-2 w-full">
+                                        <div
+                                            className={`relative px-2 rounded-lg hover:bg-gray-200 cursor-pointer group flex w-full items-center transition-all py-2.5 text-sm`}
+                                            onClick={() => {
+                                                handleChangeStatus("PUBLISHED");
+                                            }}
+                                        >
+                                            <Ink></Ink>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                aria-hidden="true"
+                                                role="img"
+                                                className="w-5 h-5 mr-2"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    fill="currentColor"
+                                                    d="M21.9 12c0-.11-.06-.22-.09-.33a4 4 0 0 0-.18-.57c-.05-.12-.12-.24-.18-.37s-.15-.3-.24-.44S21 10.08 21 10s-.2-.25-.31-.37s-.21-.2-.32-.3L20 9l-.36-.24a4 4 0 0 0-.44-.23l-.39-.18a4 4 0 0 0-.5-.15a3 3 0 0 0-.41-.09L17.67 8A6 6 0 0 0 6.33 8l-.18.05a3 3 0 0 0-.41.09a4 4 0 0 0-.5.15l-.39.18a4 4 0 0 0-.44.23l-.36.3l-.37.31c-.11.1-.22.19-.32.3s-.21.25-.31.37s-.18.23-.26.36s-.16.29-.24.44s-.13.25-.18.37a4 4 0 0 0-.18.57c0 .11-.07.22-.09.33A5 5 0 0 0 2 13a5.5 5.5 0 0 0 .09.91c0 .1.05.19.07.29a6 6 0 0 0 .18.58l.12.29a5 5 0 0 0 .3.56l.14.22a1 1 0 0 0 .05.08L3 16a5 5 0 0 0 4 2h3v-1.37a2 2 0 0 1-1 .27a2.05 2.05 0 0 1-1.44-.61a2 2 0 0 1 .05-2.83l3-2.9A2 2 0 0 1 12 10a2 2 0 0 1 1.41.59l3 3a2 2 0 0 1 0 2.82A2 2 0 0 1 15 17a1.9 1.9 0 0 1-1-.27V18h3a5 5 0 0 0 4-2l.05-.05a1 1 0 0 0 .05-.08l.14-.22a5 5 0 0 0 .3-.56l.12-.29a6 6 0 0 0 .18-.58c0-.1.05-.19.07-.29A5.5 5.5 0 0 0 22 13a5 5 0 0 0-.1-1"
+                                                ></path>
+                                                <path
+                                                    fill="currentColor"
+                                                    d="M12.71 11.29a1 1 0 0 0-1.4 0l-3 2.9a1 1 0 1 0 1.38 1.44L11 14.36V20a1 1 0 0 0 2 0v-5.59l1.29 1.3a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.42Z"
+                                                ></path>
+                                            </svg>
+                                            Published
+                                        </div>
+                                        <div
+                                            className={`relative px-2 rounded-lg hover:bg-gray-200 cursor-pointer group flex w-full items-center transition-all py-2.5 text-sm`}
+                                            onClick={() => {
+                                                handleChangeStatus("DRAFT");
+                                            }}
+                                        >
+                                            <Ink></Ink>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                aria-hidden="true"
+                                                className="w-5 h-5 mr-2"
+                                                role="img"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    fill="currentColor"
+                                                    fillRule="evenodd"
+                                                    d="M14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14v-4c0-3.771 0-5.657 1.172-6.828S6.239 2 10.03 2c.606 0 1.091 0 1.5.017q-.02.12-.02.244l-.01 2.834c0 1.097 0 2.067.105 2.848c.114.847.375 1.694 1.067 2.386c.69.69 1.538.952 2.385 1.066c.781.105 1.751.105 2.848.105h4.052c.043.534.043 1.19.043 2.063V14c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22m-8.75-7.5a.75.75 0 0 1 .75-.75h8a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75m0 3.5a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75"
+                                                    clipRule="evenodd"
+                                                ></path>
+                                                <path
+                                                    fill="currentColor"
+                                                    d="m19.352 7.617l-3.96-3.563c-1.127-1.015-1.69-1.523-2.383-1.788L13 5c0 2.357 0 3.536.732 4.268S15.643 10 18 10h3.58c-.362-.704-1.012-1.288-2.228-2.383"
+                                                ></path>
+                                            </svg>
+                                            Draft
+                                        </div>
+                                    </div>
+                                </Menu.Items>
+                            </Transition>
+                        </Menu>
+                    </div>
+                </div>
+            )}
             <div
                 style={{ backgroundImage: `url(${post.thumbnail})` }}
                 className="w-full h-[400px] bg-cover bg-center relative flex bg-opacity-70"
             >
                 <div className="absolute inset-0 bg-black opacity-70"></div>
-                <div className="max-w-[1200px] px-3 mx-auto z-10 flex flex-col justify-between">
+                <div className="w-[800px] px-3 mx-auto z-[2] flex flex-col justify-between">
                     <h1 className="font-bold text-3xl text-white pt-[64px] max-w-[800px]">
                         {post.title}
                     </h1>
@@ -372,7 +498,7 @@ const ViewPost = () => {
                 </div>
             </div>
             <div className="flex gap-2">
-                <div className="mx-auto max-w-[720px] mt-4 flex flex-col gap-3">
+                <div className="mx-auto w-[720px] mt-4 flex flex-col gap-3">
                     <div className="text-base font-normal text-black ">
                         <div className="text-xl font-bold ml-3 mb-2">
                             Description
@@ -477,6 +603,7 @@ const ViewPost = () => {
                                     size="lg"
                                 ></InputComponent>
                             </div>
+
                             <button
                                 type="button"
                                 onClick={handleSendNewComment}
@@ -928,10 +1055,14 @@ const ViewPost = () => {
                     </div>
                 </div>
             </div>
-            <div className="container-md pb-20">
-                <h2 className="text-2xl font-bold mb-6">Recent Posts</h2>
-                <ListPost data={recentPosts}></ListPost>
-            </div>
+            {(hasView && post.email === userInfo.email) || adminView ? (
+                <></>
+            ) : (
+                <div className="container-md pb-20">
+                    <h2 className="text-2xl font-bold mb-6">Recent Posts</h2>
+                    <ListPost data={recentPosts}></ListPost>
+                </div>
+            )}
         </>
     );
 };

@@ -2,7 +2,12 @@ import { Select } from "@mantine/core";
 
 function SelectComponent({
     placeholder = "Select placeholder",
-    data = ["React", "Angular", "Vue", "Svelte"],
+    data = [
+        { value: "react", label: "React" },
+        { value: "angular", label: "Angular" },
+        { value: "vue", label: "Vue" },
+        { value: "svelte", label: "Svelte" },
+    ],
     borderRadius = 4,
     value,
     handleChange = () => {},
@@ -34,6 +39,7 @@ function SelectComponent({
                 transitionProps: { transition: "pop", duration: 200 },
                 shadow: "lg",
             }}
+            className="public-sans border-gray-300 border-1 rounded-lg overflow-hidden focus-within:border-black hover:border-black transition-all"
             maxDropdownHeight={200}
             searchable
             variant="unstyled"

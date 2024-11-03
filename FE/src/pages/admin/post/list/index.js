@@ -5,10 +5,11 @@ import avatar from "../../../../assets/images/avatar_25.jpg";
 import viewIcon from "../../../../assets/images/view.svg";
 import { Menu, Transition } from "@headlessui/react";
 
-import * as dataService from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import DataGridComponent from "../../../../component/table";
+import Modal from "../../../../component/modal";
 
 function Dropdown({ postId, status, handleProcessStatus, isLastItem = false }) {
     return (
@@ -204,7 +205,6 @@ const selectes = [5, 10, 25];
 function ListPost() {
     const [posts, setPosts] = useState([]);
     const [selectedRow, setSelectedRow] = useState([]);
-    const [totalData, setTotalData] = useState(0);
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [selectedSize, setSelectedSize] = useState(selectes[0]);
     const [page, setPage] = useState(0);
@@ -212,6 +212,16 @@ function ListPost() {
     const [postSelected, setPostSelected] = useState();
     const [isOpen, setIsOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const [modalContent, setModalContent] = useState({
+        title: "DELETE",
+        description: "Are you sure want to delete?",
+        isReject: false,
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
     const menuRef = useRef(null);
 
     const columns = [
@@ -219,7 +229,7 @@ function ListPost() {
             field: "title",
             headerName: "Title",
             headerClassName: "theme-header",
-            width: 372,
+            width: 500,
             type: "string",
             sortable: true,
         },
@@ -230,6 +240,9 @@ function ListPost() {
             type: "string",
             sortable: true,
             width: 240,
+            sortComparator: (v1, v2) => {
+                return v1.userName.localeCompare(v2.userName);
+            },
             renderCell: (params) => {
                 return (
                     <div
@@ -265,19 +278,19 @@ function ListPost() {
             headerName: "Create At",
             headerClassName: "theme-header",
             sortable: true,
-            type: "dateTime",
+            type: "date",
             width: 220,
             renderCell: (params) => {
-                const date = params.value.toLocaleDateString();
-                const time = params.value.toLocaleTimeString();
-                return <>{date + "" + time}</>;
+                const date = params.value.toLocaleDateString("vi");
+                const time = params.value.toLocaleTimeString("vi");
+                return <>{time + " - " + date}</>;
             },
         },
         {
             field: "status",
             headerName: "Status",
             headerClassName: "theme-header",
-            sortable: true,
+            sortable: false,
             type: "string",
             width: 120,
             renderCell: (params) => {
@@ -288,6 +301,7 @@ function ListPost() {
                                 tagPending: params.value === "PENDING",
                                 tagApproved: params.value === "APPROVED",
                                 tagRejected: params.value === "REJECTED",
+                                tagDraft: params.value === "DRAFT",
                             })}
                         >
                             {params.value}
@@ -352,14 +366,14 @@ function ListPost() {
             try {
                 let data;
                 if (e.target.value === "") {
-                    data = await dataService.getAllPost(
+                    data = await adminService.getAllPost(
                         status,
                         page,
                         selectedSize
                     );
                     setPosts(data);
                 } else {
-                    data = await dataService.searchPostByTitle(
+                    data = await adminService.searchPostByTitle(
                         e.target.value,
                         status,
                         page,
@@ -396,26 +410,13 @@ function ListPost() {
         const fetchApi = async () => {
             try {
                 setIsLoadingData(true);
-                const data = await dataService.getAllPost(
+                const data = await adminService.getAllPost(
                     status,
                     page,
                     selectedSize
                 );
                 setPosts(data);
-                switch (status) {
-                    case "ALL":
-                        setTotalData(data.totalElement);
-                        break;
-                    case "APPROVED":
-                        setTotalData(data.totalApproved);
-                        break;
-                    case "PENDING":
-                        setTotalData(data.totalPending);
-                        break;
-                    default:
-                        setTotalData(data.totalRejected);
-                        break;
-                }
+                console.log(data);
             } catch (error) {
                 console.log(error);
             } finally {
@@ -440,14 +441,16 @@ function ListPost() {
         };
     }, [page, selectedSize, status]);
 
-    const handleProcessStatus = async (status) => {
+    const handleProcessStatus = (status, reasonReject) => {
+        status = status.toUpperCase();
         if (postSelected.status === status) {
             return;
         }
         toast.promise(
-            dataService.processStatusPost(
+            adminService.processStatusPost(
                 postSelected.id,
                 status,
+                reasonReject,
                 page,
                 selectedSize
             ),
@@ -459,6 +462,7 @@ function ListPost() {
                         postSelected,
                         status
                     );
+                    setModalContent({ ...modalContent, isOpen: false });
                     setPosts(updatedPosts);
                     return "Process success";
                 },
@@ -495,6 +499,7 @@ function ListPost() {
         });
     };
 
+    console.log(posts);
     return (
         <div>
             <div className="flex justify-center w-full ">
@@ -521,7 +526,7 @@ function ListPost() {
                                 >
                                     All
                                     <span className="ml-1.5 text-xs px-1.5 py-0.5 font-semibold  text-white rounded-md bg-black">
-                                        {posts.totalElement || 0}
+                                        {posts?.totalElement || 0}
                                     </span>
                                 </div>
                                 <div
@@ -629,7 +634,7 @@ function ListPost() {
                                 <DataGridComponent
                                     columns={columns}
                                     rows={reFormat(posts.posts)}
-                                    totalElements={totalData}
+                                    totalElements={posts.totalElement}
                                     handleRowSelection={handleRowSelection}
                                     isLoading={isLoadingData}
                                     paginationModel={{
@@ -643,6 +648,14 @@ function ListPost() {
                     </div>
                 </div>
             </div>
+            <Modal
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                handleRemove={modalContent.handleRemove}
+                title={modalContent.title}
+                isReject={modalContent.isReject}
+                description={modalContent.description}
+            ></Modal>
             {isOpen && (
                 <div
                     ref={menuRef}
@@ -661,9 +674,15 @@ function ListPost() {
                         </button>
                         <button
                             onClick={() => {
-                                handleProcessStatus("REJECTED");
+                                setModalContent({
+                                    ...modalContent,
+                                    title: "REJECT",
+                                    isOpen: true,
+                                    isReject: true,
+                                    handleRemove: handleProcessStatus,
+                                });
                             }}
-                            className="hover:opacity-75 hover:bg-gray-200 font-medium group flex text-red-600 w-full items-center rounded-md px-2 py-2.5 text-sm"
+                            className="hover:opacity-75 hover:bg-gray-200 font-medium group flex text-red-500 w-full items-center rounded-md px-2 py-2.5 text-sm"
                         >
                             Reject
                         </button>

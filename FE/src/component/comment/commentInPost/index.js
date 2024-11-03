@@ -6,7 +6,7 @@ import avatar from "../../../assets/images/avatar_25.jpg";
 import { over } from "stompjs";
 import SockJS from "sockjs-client";
 import { useSelector } from "react-redux";
-import * as dataApi from "../../../api/apiService/dataService";
+import * as publicService from "../../../api/apiService/publicService";
 import * as userApi from "../../../api/apiService/authService";
 import moment from "moment";
 import { toast } from "sonner";
@@ -41,7 +41,7 @@ export default function CommentInPost({ openModal, funcCloseModal, post }) {
     const onConnected = () => {
         stompClient.subscribe(`/comment/post/${post.id}`, onMessageReceived);
     };
-    
+
     const connect = () => {
         const Sock = new SockJS("http://localhost:8080/ws");
         stompClient = over(Sock);
@@ -59,7 +59,7 @@ export default function CommentInPost({ openModal, funcCloseModal, post }) {
 
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getComments(
+                const result = await publicService.getComments(
                     `/post/${post.id}/comments?page=${quantity.page}&size=${quantity.size}`
                 );
                 setComments(result.content.content);
@@ -159,7 +159,7 @@ export default function CommentInPost({ openModal, funcCloseModal, post }) {
         const fetchApi = async () => {
             try {
                 await userApi.removeCommentById(userInfo.email, cmtId);
-                const result = await dataApi.getComments(
+                const result = await publicService.getComments(
                     `/post/${post.id}?page=${quantity.page}&size=${quantity.size}`
                 );
                 setComments(result.content.content);

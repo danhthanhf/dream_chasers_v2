@@ -8,7 +8,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import * as userService from "../../api/apiService/authService";
 import notificationSlice from "../../redux/reducers/notificationSlice";
-import { getTimeElapsed } from "../Ultil";
+import { getTimeElapsed } from "../../util/index";
+import Ink from "react-ink";
 
 export default function NotificationItem({ iconBtn }) {
     const user = useSelector((state) => state.login.user);
@@ -40,7 +41,8 @@ export default function NotificationItem({ iconBtn }) {
             }
         };
         fetchApi();
-        navigate(notification.path);
+        var path = getPath(notification.type, notification.title);
+        navigate(path);
     };
 
     const handleReadAll = () => {
@@ -112,6 +114,19 @@ export default function NotificationItem({ iconBtn }) {
         }
         fetchApi();
     };
+
+    const getPath = (type, title, referenceId) => {
+        type = type.toLowerCase();
+        if (type.includes("post")) {
+            return "/posts/" + title;
+        } else if (type.includes("course")) {
+            return "course/overview/" + encodeURIComponent(title);
+        } else if (type.includes("comment")) {
+            return referenceId
+                ? "/posts/" + title + "?watch=" + referenceId
+                : "/posts/" + title;
+        }
+    };
     return (
         <div className="w-full max-w-sm px-1">
             <Popover className="relative">
@@ -121,9 +136,10 @@ export default function NotificationItem({ iconBtn }) {
                             onClick={() => {
                                 setRender(!render);
                             }}
-                            className={`
-              text-black  items-center group inline-flex x-3 text-base font-medium hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75`}
+                            className={` text-black justify-center pt-1 items-center flex x-3 text-base font-medium hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 relative`}
                         >
+                            <Ink></Ink>
+
                             <span className="relative">
                                 <div className={clsx(styles.button)}>
                                     {iconBtn}
@@ -161,8 +177,9 @@ export default function NotificationItem({ iconBtn }) {
                                             <span> Notifications</span>
                                             <span
                                                 onClick={handleReadAll}
-                                                className=" mr-1 py-1 px-2 rounded-md hover:bg-gray-200 opacity-85 transition-all delay-75 ease-linear text-sm font-medium"
+                                                className=" mr-1 py-1 px-2 rounded-md hover:bg-gray-200 opacity-85 transition-all delay-75 relative ease-linear text-sm font-medium"
                                             >
+                                                <Ink></Ink>
                                                 Mark all as read
                                             </span>
                                         </div>
@@ -241,10 +258,11 @@ export default function NotificationItem({ iconBtn }) {
                                                         return (
                                                             <Link
                                                                 to={
-                                                                    "/posts/" +
-                                                                    noti.path +
-                                                                    "?watch=" +
-                                                                    noti.commentId
+                                                                    "/" +
+                                                                    getPath(
+                                                                        noti.type,
+                                                                        noti.title
+                                                                    )
                                                                 }
                                                                 key={ind}
                                                                 onClick={() =>
@@ -257,7 +275,6 @@ export default function NotificationItem({ iconBtn }) {
                                                                 <div
                                                                     className={clsx(
                                                                         styles.item,
-                                                                        "flex gap-3",
                                                                         {
                                                                             [styles.unRead]:
                                                                                 !noti.read,
@@ -269,44 +286,78 @@ export default function NotificationItem({ iconBtn }) {
                                                                         )
                                                                     }
                                                                 >
-                                                                    <img
-                                                                        src={
-                                                                            noti.img ||
-                                                                            avatar
-                                                                        }
-                                                                        alt="avatar"
-                                                                    />
-                                                                    <div className="text-[14px] flex-1">
-                                                                        <strong>
+                                                                    <span
+                                                                        className={clsx(
+                                                                            "uppercase text-xs",
                                                                             {
-                                                                                noti.fromUser
+                                                                                tagApproved:
+                                                                                    noti.type.includes(
+                                                                                        "APPROVED"
+                                                                                    ) ||
+                                                                                    noti.type.includes(
+                                                                                        "PUBLISHED"
+                                                                                    ),
+                                                                                tagPending:
+                                                                                    noti.type.includes(
+                                                                                        "PENDING"
+                                                                                    ),
+                                                                                tagRejected:
+                                                                                    noti.type.includes(
+                                                                                        "REJECTED"
+                                                                                    ),
                                                                             }
-                                                                        </strong>{" "}
-                                                                        <span className="lowercase">
-                                                                            {
-                                                                                noti.content
-                                                                            }
-                                                                            <strong className="pl-1">
+                                                                        )}
+                                                                    >
+                                                                        {"#" +
+                                                                            noti.type}
+                                                                    </span>
+                                                                    <div className="flex gap-3 mt-1.5">
+                                                                        {noti.sender && (
+                                                                            <img
+                                                                                src={
+                                                                                    noti.img ||
+                                                                                    avatar
+                                                                                }
+                                                                                alt="avatar"
+                                                                            />
+                                                                        )}
+                                                                        <div className="text-[14px] flex-1">
+                                                                            <strong className="line-clamp-2">
                                                                                 {
-                                                                                    noti.titleContent
+                                                                                    noti.title
                                                                                 }
                                                                             </strong>
-                                                                        </span>
-                                                                        <div className="text-gray-500 mt-1.5 text-[13px] font-normal">
-                                                                            {new Date(
-                                                                                noti.createdAt
-                                                                            ).toLocaleDateString()}
-                                                                            <span className="mx-1.5">
-                                                                                -
+                                                                            <strong>
+                                                                                {
+                                                                                    noti.fromUser
+                                                                                }
+                                                                            </strong>{" "}
+                                                                            <span className="lowercase">
+                                                                                {
+                                                                                    noti.content
+                                                                                }
+                                                                                {noti.reasonReject &&
+                                                                                    " because " +
+                                                                                        noti.reasonReject}
+
+                                                                                .
                                                                             </span>
-                                                                            {getTimeElapsed(
-                                                                                noti.createdAt
-                                                                            )}
+                                                                            <div className="text-gray-500 mt-1.5 text-[13px] font-normal">
+                                                                                {new Date(
+                                                                                    noti.createdAt
+                                                                                ).toLocaleDateString()}
+                                                                                <span className="mx-1.5">
+                                                                                    -
+                                                                                </span>
+                                                                                {getTimeElapsed(
+                                                                                    noti.createdAt
+                                                                                )}
+                                                                            </div>
                                                                         </div>
+                                                                        {!noti.read && (
+                                                                            <div className="dotNew"></div>
+                                                                        )}
                                                                     </div>
-                                                                    {!noti.read && (
-                                                                        <div className="dotNew"></div>
-                                                                    )}
                                                                 </div>
                                                                 <hr className="cssHr" />
                                                             </Link>

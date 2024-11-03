@@ -1,8 +1,9 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.CommentDTO;
-import com.dreamchasers.recoverbe.model.User.Comment;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.User.Comment;
+import com.dreamchasers.recoverbe.entity.User.User;
+import com.dreamchasers.recoverbe.enums.NotificationType;
 import com.dreamchasers.recoverbe.repository.CommentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -52,8 +52,8 @@ public class CommentService {
         Comment comment = getCommentFromCommentDTO(commentDTO);
 
         if (postId != null) {
-            var result = postService.saveComment(postId, comment);
-            if (result == null)
+            var post = postService.saveComment(postId, comment);
+            if (post == null)
                 throw new Exception("Post not found");
 
             if(commentDTO.getParentId() != null) {
@@ -72,9 +72,10 @@ public class CommentService {
                 }
 
                 if(!Objects.equals(author.getEmail(), repliedUser.getEmail())) {
-                    notificationService.saveAndSendToUser(author, repliedUser, "mention you in a comment", result.getTitle(), result.getTitle(), comment.getId());
+                    notificationService.sendNotificationToUser(author, repliedUser, comment.getId(), NotificationType.COMMENT_REPLY, post.getTitle(), "mention you in a comment", null);
                 }
             }
+            notificationService.sendNotificationToUser(author, repliedUser, null, NotificationType.POST_COMMENT, post.getTitle(),"commented on your post", null);
 
             comment = commentRepository.save(comment);
         }
@@ -84,26 +85,11 @@ public class CommentService {
             commentDTO.setParentId(comment.getParentComment().getId());
         commentDTO.setCreatedAt(LocalDateTime.now());
         commentDTO.setTotalReplies(comment.getReplies().size());
-        System.out.println(commentDTO);
         return commentDTO;
     }
 
     public Comment getById(UUID id) {
         return commentRepository.findById(id).orElse(null);
-    }
-
-
-    public void deleteById(UUID id) {
-        var comment = commentRepository.findById(id).orElse(null);
-        if (comment == null) {
-            return ;
-        }
-        List<Comment> subComments = commentRepository.findAllByParentCommentId(id);
-
-        if(!subComments.isEmpty()) {
-            commentRepository.deleteAll(subComments);
-        }
-        commentRepository.delete(comment);
     }
 
 }

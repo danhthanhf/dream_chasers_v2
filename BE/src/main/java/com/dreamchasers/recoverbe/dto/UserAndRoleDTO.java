@@ -1,7 +1,7 @@
 package com.dreamchasers.recoverbe.dto;
 
-import com.dreamchasers.recoverbe.model.User.Role;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.User.Role;
+import com.dreamchasers.recoverbe.entity.User.User;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Page;

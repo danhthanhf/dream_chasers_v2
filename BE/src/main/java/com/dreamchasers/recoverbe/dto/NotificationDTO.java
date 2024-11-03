@@ -1,16 +1,17 @@
 package com.dreamchasers.recoverbe.dto;
 
-import com.dreamchasers.recoverbe.model.Notification;
+import com.dreamchasers.recoverbe.entity.User.User;
 import lombok.Builder;
-import lombok.Data;
-import org.springframework.data.domain.Page;
 
-import java.util.List;
+import java.util.UUID;
 
-@Data
 @Builder
 public class NotificationDTO {
-    private List<Notification> notifications;
-    private long totalElements;
-    private int totalUnread;
+    private UUID id;
+    private String content;
+    private boolean isRead;
+    private UserBasicDTO author;
+    private UserBasicDTO sender;
+    private Object reference;
+
 }

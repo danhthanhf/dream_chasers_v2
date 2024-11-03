@@ -4,7 +4,7 @@ import styles from "../create/CreateCourse.module.scss";
 import fileSelect from "../../../../assets/images/fileSelect.svg";
 import { useEffect, useState } from "react";
 import Select from "react-select";
-import * as DataApi from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
 import { toast } from "sonner";
 import btnClose from "../../../../assets/images/btnClose.svg";
 import { useParams } from "react-router-dom";
@@ -48,7 +48,7 @@ function EditCourse() {
     const handleFileChange = (e, index, indexSection) => {
         const file = e.target.files[0];
         setIsLoading((prev) => true);
-        toast.promise(DataApi.uploadFile(file), {
+        toast.promise(adminService.uploadFile(file), {
             loading: "Loading file...",
             success: (result) => {
                 setIsLoading((prev) => false);
@@ -87,7 +87,7 @@ function EditCourse() {
 
     const handleUpdateVideoCourse = (e) => {
         setIsLoading((prev) => true);
-        toast.promise(DataApi.uploadFile(e.target.files[0]), {
+        toast.promise(adminService.uploadFile(e.target.files[0]), {
             loading: "Loading video...",
             success: (result) => {
                 setIsLoading((prev) => false);
@@ -233,7 +233,7 @@ function EditCourse() {
                 categories: newCategories,
             };
 
-            toast.promise(DataApi.updateCourse(id, newCourse), {
+            toast.promise(adminService.updateCourse(id, newCourse), {
                 loading: "Loading...",
                 success: (result) => {
                     return "Update successfully";
@@ -263,9 +263,9 @@ function EditCourse() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await DataApi.getAllCategories();
+                const result = await adminService.getAllCategories();
                 setOptions(result.content.content);
-                const data = await DataApi.getCourseById(id);
+                const data = await adminService.getCourseById(id);
                 console.log(data);
                 setFormData(data.content);
             } catch (error) {

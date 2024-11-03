@@ -1,8 +1,7 @@
 import React from "react";
 import moment from "moment";
 import clsx from "clsx";
-import styles from "./styles.module.css"; // Assuming you have a CSS module
-
+import styles from "./styles.module.css";
 const Comment = ({
     comment,
     handleReply,

@@ -9,8 +9,7 @@ import {
     ChevronRightIcon,
     ChevronUpDownIcon,
 } from "@heroicons/react/20/solid";
-import * as dataApi from "../../../../api/apiService/dataService";
-import Modal from "../../../../component/modal";
+import * as adminService from "../../../../api/apiService/adminService";
 import avatar from "../../../../assets/images/avatar_1.jpg";
 import Datepicker from "react-tailwindcss-datepicker";
 import moment from "moment/moment";
@@ -30,7 +29,7 @@ function ListDeleteInvoice() {
     const handleSearchInputChange = async (e) => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.searchInvoice(
+                const result = await adminService.searchInvoice(
                     e.target.value,
                     page,
                     selectedSize
@@ -74,7 +73,7 @@ function ListDeleteInvoice() {
     const fetchInvoicesUpdate = async () => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllInvoiceDelete(
+                const result = await adminService.getAllInvoiceDelete(
                     page,
                     selectedSize
                 );
@@ -95,7 +94,7 @@ function ListDeleteInvoice() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllInvoiceDelete();
+                const result = await adminService.getAllInvoiceDelete();
                 setInvoices(result.content.content);
             } catch (error) {
                 console.log(error);
@@ -113,7 +112,7 @@ function ListDeleteInvoice() {
         if (newValue.startDate === null && newValue.endDate === null) {
             const fetchApi = async () => {
                 try {
-                    const result = await dataApi.getAllInvoice();
+                    const result = await adminService.getAllInvoice();
                     setInvoices(result.content.content);
                     console.log(result);
                 } catch (error) {
@@ -129,7 +128,7 @@ function ListDeleteInvoice() {
         const enđDate = tempEnd.format("YYYY-MM-DDTHH:mm:ss.SSS");
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getInvoicesByDate(
+                const result = await adminService.getInvoicesByDate(
                     startDate,
                     enđDate,
                     page,
@@ -145,7 +144,7 @@ function ListDeleteInvoice() {
     };
 
     const handleRestoreInvoice = (id) => {
-        toast.promise(dataApi.restoreInvoieById(id), {
+        toast.promise(adminService.restoreInvoieById(id), {
             loading: "loading...",
             success: (data) => {
                 setInvoices(data.content.content);

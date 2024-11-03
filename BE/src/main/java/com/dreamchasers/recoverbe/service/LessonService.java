@@ -1,9 +1,9 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.SectionDTO;
-import com.dreamchasers.recoverbe.model.CourseKit.Lesson;
-import com.dreamchasers.recoverbe.model.CourseKit.Section;
-import com.dreamchasers.recoverbe.model.User.Comment;
+import com.dreamchasers.recoverbe.entity.CourseKit.Lesson;
+import com.dreamchasers.recoverbe.entity.CourseKit.Section;
+import com.dreamchasers.recoverbe.entity.User.Comment;
 import com.dreamchasers.recoverbe.repository.LessonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

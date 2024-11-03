@@ -1,8 +1,8 @@
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import styles from "../Payment.module.scss";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import * as dataApi from "../../../api/apiService/dataService";
+import * as publicService from "../../../api/apiService/publicService";
 function FailurePayment() {
     const [course, setCourse] = useState({
         price: 0,
@@ -15,7 +15,7 @@ function FailurePayment() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getCourseById(courseId);
+                const result = await publicService.getCourseById(courseId);
                 setCourse(result.content);
                 console.log(result.content);
             } catch (error) {

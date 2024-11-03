@@ -2,21 +2,19 @@ import { Quill } from "react-quill/lib";
 import ImageUploader from "quill-image-uploader";
 import clsx from "clsx";
 import fileSelect from "../../../assets/images/fileSelect.svg";
-import Debounce from "../../../component/debounce";
 import styles from "../../admin/Course/create/CreateCourse.module.scss";
 import ReactQuill from "react-quill";
-import * as dataApi from "../../../api/apiService/dataService";
+import * as publicService from "../../../api/apiService/publicService";
 import "react-quill/dist/quill.snow.css";
 import InputComponent from "../../../component/InputComponent";
-import * as dataService from "../../../api/apiService/dataService";
 import * as userService from "../../../api/apiService/authService";
 
 import "quill-image-uploader/dist/quill.imageUploader.min.css";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import btnClose from "../../../assets/images/btnClose.svg";
-import SelectComponent from "../../../component/SelectComponent";
-import { useNavigate } from "react-router-dom";
+import SelectComponent from "../../../component/select/MultiSelectComponent";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 Quill.register("modules/imageUploader", ImageUploader);
@@ -28,7 +26,7 @@ const handleUpload = (file, setIsLoading) => {
     injectIsLoading(true);
     const fetchApi = async () => {
         try {
-            const result = await dataApi.uploadFile(file);
+            const result = await publicService.uploadFile(file);
             injectIsLoading(false);
             return result.content;
         } catch (error) {
@@ -39,40 +37,18 @@ const handleUpload = (file, setIsLoading) => {
     return fetchApi();
 };
 
-function CreatePost() {
+function CreatePost({ initPost }) {
     const [errors, setErrors] = useState({});
+    const { title } = useParams();
     const [listTagData, setListTagData] = useState([]);
     const user = useSelector((state) => state.login.user);
+    const [post, setPost] = useState(initPost);
 
-    const [post, setPost] = useState({
-        titie: "",
-        description: "",
-        thumbnail: "",
-        content: "",
-        tags: [],
-    });
     const [isLoading, setIsLoading] = useState(false);
+
     injectIsLoading = setIsLoading;
 
     const navigate = useNavigate();
-
-    // const handleUpload = (file, setIsLoading) => {
-    //     if (!file) {
-    //         return;
-    //     }
-    //     injectIsLoading(true);
-    //     const fetchApi = async () => {
-    //         try {
-    //             const result = await dataApi.uploadFile(file);
-    //             injectIsLoading(false);
-    //             return result.content;
-    //         } catch (error) {
-    //             console.log(error);
-    //         }
-    //     };
-
-    //     return fetchApi();
-    // };
 
     const handleChangeTag = (data) => {
         setPost({ ...post, tags: [...data] });
@@ -84,7 +60,7 @@ function CreatePost() {
     const handleUpLoadThubmnail = (e) => {
         const file = e.target.files[0];
         setIsLoading(true);
-        toast.promise(dataApi.uploadFile(file), {
+        toast.promise(publicService.uploadFile(file), {
             loading: "loading...",
             success: (data) => {
                 setPost({ ...post, thumbnail: data.content });
@@ -100,19 +76,30 @@ function CreatePost() {
     };
 
     const handleChangeQuill = (content) =>
-        setPost({ ...post, content: content });
+        setPost((prev) => ({ ...prev, content: content }));
 
     const handleTitleChange = (e) => {
-        setPost({ ...post, title: e.target.value });
+        setPost((prev) => ({ ...prev, title: e.target.value }));
     };
     const handleDescChange = (e) => {
-        setPost({ ...post, description: e.target.value });
+        setPost((prev) => ({ ...prev, description: e.target.value }));
     };
+
+    useEffect(() => {
+        let reformatTags = [];
+        if (initPost?.tags) {
+            reformatTags = initPost.tags.map((tag) => ({
+                label: tag.name,
+                value: tag.id,
+            }));
+        }
+        setPost({ ...initPost, tags: reformatTags });
+    }, [initPost]);
 
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllTag();
+                const result = await publicService.getAllTag();
                 const formatTags = result.map((tag) => ({
                     label: tag.name,
                     value: tag.id,
@@ -125,6 +112,26 @@ function CreatePost() {
         };
         fetchApi();
     }, []);
+
+    const handleUpdatePost = () => {
+        const tagsValue = post.tags.map((tag) => {
+            return {
+                name: tag.label,
+            };
+        });
+        toast.promise(userService.updatePost({ ...post, tags: tagsValue }), {
+            loading: "loading...",
+            success: () => {
+                navigate(`/posts/${encodeURIComponent(post?.title)}/view`);
+                return "Update successfully";
+            },
+            error: (error) => {
+                console.log(error);
+                return error.message;
+            },
+        });
+    };
+
     const handlePusblish = () => {
         const tagsValue = post.tags.map((tag) => {
             return {
@@ -136,7 +143,7 @@ function CreatePost() {
             {
                 loading: "loading...",
                 success: () => {
-                    navigate(`/posts/${encodeURIComponent(post.title)}`);
+                    navigate(`/posts/${encodeURIComponent(post?.title)}`);
                     return "Publis successfully, please wait for admin approval";
                 },
                 error: (error) => {
@@ -146,7 +153,6 @@ function CreatePost() {
             }
         );
     };
-
     return (
         <div className="container flex py-10">
             <div className="mx-auto max-w-[800px] w-[800px] ">
@@ -160,12 +166,12 @@ function CreatePost() {
                     <div className="px-6 mb-6 flex flex-col gap-4">
                         <InputComponent
                             onHandleChange={handleTitleChange}
-                            value={post.title}
+                            value={post?.title}
                             label="Title"
                         ></InputComponent>
                         <InputComponent
                             onHandleChange={handleDescChange}
-                            value={post.description}
+                            value={post?.description}
                             size="lg"
                             label="Description"
                         ></InputComponent>
@@ -174,7 +180,7 @@ function CreatePost() {
                             <div className="mt-2.5">
                                 <ReactQuill
                                     theme="snow"
-                                    value={post.content || ""}
+                                    value={post?.content}
                                     onChange={(
                                         content,
                                         delta,
@@ -235,10 +241,10 @@ function CreatePost() {
                                     <div
                                         className={clsx(
                                             styles.formField,
-                                            "w-1/2 mt-[10px]"
+                                            "w-1/2 mt-[10px] ml-2"
                                         )}
                                     >
-                                        {post.thumbnail && (
+                                        {post?.thumbnail && (
                                             <div
                                                 className={clsx(
                                                     styles.imgField
@@ -249,7 +255,7 @@ function CreatePost() {
                                                         styles.thumbnailImg,
                                                         "rounded-lg"
                                                     )}
-                                                    src={post.thumbnail}
+                                                    src={post?.thumbnail}
                                                     alt=""
                                                 />
                                                 <button
@@ -277,6 +283,7 @@ function CreatePost() {
                         <div className="mb-2">
                             <SelectComponent
                                 data={listTagData}
+                                value={post?.tags}
                                 handleChange={handleChangeTag}
                             ></SelectComponent>
                         </div>
@@ -289,13 +296,24 @@ function CreatePost() {
                     >
                         Preview
                     </button>
-                    <button
-                        type="button"
-                        onClick={handlePusblish}
-                        className="rounded-lg cursor-pointer hover:opacity-75 bg-[#1C252E] text-white font-bold text-base px-4 py-2.5"
-                    >
-                        Publish
-                    </button>
+                    {!title && (
+                        <button
+                            type="button"
+                            onClick={handlePusblish}
+                            className="rounded-lg cursor-pointer hover:opacity-75 bg-[#1C252E] text-white font-bold text-base px-4 py-2.5"
+                        >
+                            Publish
+                        </button>
+                    )}
+                    {title && (
+                        <button
+                            type="button"
+                            onClick={handleUpdatePost}
+                            className="rounded-lg cursor-pointer hover:opacity-75 bg-[#1C252E] text-white font-bold text-base px-4 py-2.5"
+                        >
+                            SaveChange
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

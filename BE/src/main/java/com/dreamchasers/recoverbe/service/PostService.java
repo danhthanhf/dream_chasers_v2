@@ -3,13 +3,16 @@ package com.dreamchasers.recoverbe.service;
 import com.dreamchasers.recoverbe.dto.CommentDTO;
 import com.dreamchasers.recoverbe.dto.PagePostDTO;
 import com.dreamchasers.recoverbe.dto.PostDTO;
-import com.dreamchasers.recoverbe.dto.UserBasicDTO;
+import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
+import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
+import com.dreamchasers.recoverbe.exception.PermissionDeniedException;
 import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.helper.PermissionUtils;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.Post.Post;
-import com.dreamchasers.recoverbe.model.Post.PostStatus;
-import com.dreamchasers.recoverbe.model.User.Comment;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.Post.Post;
+import com.dreamchasers.recoverbe.entity.User.Comment;
+import com.dreamchasers.recoverbe.entity.User.User;
+import com.dreamchasers.recoverbe.enums.CoursePostStatus;
 import com.dreamchasers.recoverbe.repository.CommentRepository;
 import com.dreamchasers.recoverbe.repository.PostRepository;
 import com.dreamchasers.recoverbe.repository.UserRepository;
@@ -20,9 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
-import org.xmlunit.util.Convert;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -40,16 +41,61 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
 
+    public void updatePost(Post post, Post newPost) {
+        post.setStatus(newPost.getStatus());
+        post.setContent(newPost.getContent());
+        post.setReasonReject(newPost.getReasonReject());
+        post.setDescription(newPost.getDescription());
+        post.setTags(null);
+        post.setTags(tagService.saveTags(newPost.getTags()));
+        postRepository.save(post);
+    }
 
-    public ResponseObject updateStatus(UUID id, String status, int page, int size) {
-        Post post = postRepository.findById(id).orElse(null);
-        if (post == null) {
-            return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Post not found").build();
-        }
-        post.setStatus(PostStatus.valueOf(status));
-        notificationService.adminSendProcessDataPost(post.getUser(), post);
+    public ResponseObject updatePost(UUID postId, Post newPost) {
+        if(userService.getCurrentUser().equals(newPost.getUser()))
+            throw new PermissionDeniedException("You don't have permission to update this post");
+        var existPost = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Post not found"));
+        updatePost(existPost, newPost);
+        var postDTO = convertService.convertToPostDTO(existPost);
+        return ResponseObject.builder().status(HttpStatus.OK).content(postDTO).build();
+    }
+
+    public ResponseObject getPostListByUser(CoursePostStatus status, int page, int size) {
+        var user = userService.getCurrentUser();
+
+        var postsPage = postRepository.findAllByUserAndStatusAndDeleted(user, status, false, PageRequest.of(page, size));
+
+        var response = convertService.convertToPagePostDTO(postsPage);
+        return ResponseObject.builder().status(HttpStatus.OK).content(response).build();
+    }
+
+    public ResponseObject adminChangeStatus(UUID postId, StatusChangeDTO status) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new EntityNotFoundException("Post not found"));
+        post.setReasonReject(status.getDetail());
+        post.setStatus(status.getStatus());
+
+        notificationService.sendNotificationToUser(null, post.getUser(), null, notificationService.getNotificationType(status.getStatus(), false), post.getTitle(),  "Your post was " + status.getStatus() + " by ADMIN", status.getDetail());
+
         postRepository.save(post);
         return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+    }
+
+    public ResponseObject userChangeStatus(UUID id, CoursePostStatus status) {
+        Post post = postRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Post not found"));
+
+        if(status == post.getStatus())
+            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Status is the same").build();
+
+        PermissionUtils.checkPermission(post.getUser().getEmail());
+
+        if(status == CoursePostStatus.PUBLISHED)
+            post.setStatus(CoursePostStatus.PENDING);
+        else
+            post.setStatus(status);
+
+        postRepository.save(post);
+            var postDTO = convertService.convertToPostDTO(post);
+        return ResponseObject.builder().content(postDTO).status(HttpStatus.OK).build();
     }
 
     public ResponseObject likePost(UUID postId, String email) {
@@ -158,7 +204,7 @@ public class PostService {
 
 
     public ResponseObject getPosts(int page, int size){
-        var pagePost = postRepository.findAllByDeletedAndStatus(false, PostStatus.APPROVED, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        var pagePost = postRepository.findAllByDeletedAndStatus(false, CoursePostStatus.APPROVED, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
         PagePostDTO pagePostDTO = PagePostDTO.builder()
                 .posts(pagePost.getContent().stream().map(comment ->transformPostDTO(comment, page, size)).toList())
                 .totalPage(pagePost.getTotalPages())
@@ -211,19 +257,21 @@ public class PostService {
 
     public ResponseObject getAllByStatus(String status, int page, int size) {
         Page<Post> result;
-        if (Objects.equals(status, PostStatus.ALL.toString())) {
+        if (Objects.equals(status, CoursePostStatus.ALL.toString())) {
             result = postRepository.findAllByDeleted(false, PageRequest.of(page, size));
         }
         else
-            result = postRepository.findAllByDeletedAndStatus(false, PostStatus.valueOf(status), PageRequest.of(page, size));
+            result = postRepository.findAllByDeletedAndStatus(false, CoursePostStatus.valueOf(status), PageRequest.of(page, size));
         List<PostDTO> response = result.stream().map(post -> transformPostDTO(post, 0, 5)).toList();
-        long totalApprovedPosts = postRepository.countByStatusAndDeleted(PostStatus.APPROVED, false);
-        long totalRejectedPosts = postRepository.countByStatusAndDeleted(PostStatus.REJECTED, false);
-        long totalPendingPosts = postRepository.countByStatusAndDeleted(PostStatus.PENDING, false);
+        long totalRejectedPosts = postRepository.countByStatusAndDeleted(CoursePostStatus.REJECTED, false);
+        long totalPendingPosts = postRepository.countByStatusAndDeleted(CoursePostStatus.PENDING, false);
+        long totalApprovedPosts = postRepository.countByStatusAndDeleted(CoursePostStatus.APPROVED, false);
+        long totalPost = totalRejectedPosts + totalApprovedPosts + totalPendingPosts;
+
         PagePostDTO pagePostDTO = PagePostDTO.builder()
                 .posts(response)
                 .totalPage(result.getTotalPages())
-                .totalElement(result.getTotalElements())
+                .totalElement(totalPost)
                 .totalApproved(totalApprovedPosts)
                 .totalPending(totalPendingPosts)
                 .totalRejected(totalRejectedPosts)
@@ -233,10 +281,10 @@ public class PostService {
 
     public ResponseObject getAllByStatusAndTitle(String title, String status, int page, int size) {
         Page<Post> result;
-        if (Objects.equals(status, com.dreamchasers.recoverbe.model.Post.PostStatus.ALL.toString()))
+        if (Objects.equals(status, CoursePostStatus.ALL.toString()))
             result = postRepository.findAllByTitleAndStatusAndDeleted(title, false, PageRequest.of(page, size));
         else
-            result = postRepository.findAllByTitleAndStatusAndIsDeleted(title, com.dreamchasers.recoverbe.model.Post.PostStatus.valueOf(status), false, PageRequest.of(page, size));
+            result = postRepository.findAllByTitleAndStatusAndIsDeleted(title, CoursePostStatus.valueOf(status), false, PageRequest.of(page, size));
         Page<PostDTO> response = result.map(post ->transformPostDTO(post, 0, 5));
         return ResponseObject.builder().status(HttpStatus.OK).content(response).build();
     }

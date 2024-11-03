@@ -1,7 +1,7 @@
 package com.dreamchasers.recoverbe.dto;
 
-import com.dreamchasers.recoverbe.model.CourseKit.Progress;
-import com.dreamchasers.recoverbe.model.User.Role;
+import com.dreamchasers.recoverbe.entity.CourseKit.Progress;
+import com.dreamchasers.recoverbe.entity.User.Role;
 import lombok.Builder;
 import lombok.Data;
 

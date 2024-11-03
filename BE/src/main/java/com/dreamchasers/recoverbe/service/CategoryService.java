@@ -1,8 +1,10 @@
 package com.dreamchasers.recoverbe.service;
 
+import com.dreamchasers.recoverbe.dto.CategoryAndCoursePriceDTO;
+import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.CourseKit.Category;
-import com.dreamchasers.recoverbe.model.CourseKit.Course;
+import com.dreamchasers.recoverbe.entity.CourseKit.Category;
+import com.dreamchasers.recoverbe.entity.CourseKit.Course;
 import com.dreamchasers.recoverbe.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +20,16 @@ import java.util.UUID;
 
 public class CategoryService {
     private final CategoryRepository categoryRepository;
+    private final ConvertService convertService;
+
+    public ResponseObject getAllAndPrice(int page, int size) {
+        var categories = categoryRepository.findAllByDeleted(false, PageRequest.of(page, size));
+        CategoryAndCoursePriceDTO dto = CategoryAndCoursePriceDTO.builder()
+                .categories(categories)
+                .prices(convertService.convertToListCoursePriceDTO())
+                .build();
+        return ResponseObject.builder().status(HttpStatus.OK).content(dto).build();
+    }
 
     public ResponseObject restoreListCategory(List<UUID> ids) {
         List<Category> categories = categoryRepository.findAllById(ids);

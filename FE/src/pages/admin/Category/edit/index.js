@@ -2,7 +2,8 @@ import styles from "../../Course/create/CreateCourse.module.scss";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import * as dataApi from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
+import * as publicService from "../../../../api/apiService/publicService";
 import { useParams } from "react-router-dom";
 
 function CategoryEdit() {
@@ -22,7 +23,7 @@ function CategoryEdit() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const result = await dataApi.getCategoryById(id);
+                const result = await publicService.getCategoryById(id);
                 setCateogry(result.content);
             } catch (error) {
                 console.log(error);
@@ -33,7 +34,7 @@ function CategoryEdit() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        toast.promise(dataApi.editCategory(id, category), {
+        toast.promise(adminService.editCategory(id, category), {
             loading: "Loading...",
             success: (data) => {
                 return "Update Sucessfully";

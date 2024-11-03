@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import searchIcon from "../../assets/images/search.png";
 import loadingIcon from "../../assets/images/loading.png";
-import * as dataApi from "../../api/apiService/dataService";
+import * as publicService from "../../api/apiService/publicService";
 import clsx from "clsx";
 import styles from "./Search.module.scss";
 import { Link } from "react-router-dom";
@@ -17,7 +17,7 @@ const SearchBar = () => {
 
     const fetchApi = async (title) => {
         try {
-            const result = await dataApi.searchCourseByNameAndPostByTitle(
+            const result = await publicService.searchCourseByNameAndPostByTitle(
                 title
             );
             setloading(false);
@@ -134,11 +134,12 @@ const SearchBar = () => {
                 </div>
             </div>
             {showResult && (
-                <div className="absolute top-full bg-white border border-gray-300 rounded-md shadow-lg w-full z-20 mt-3">
-                    {searchResult?.posts?.length > 0 ||
-                    searchResult?.courses?.length > 0 ? (
+                <div className="absolute top-full bg-white border border-gray-300 rounded-md shadow-lg w-full z-20 mt-1">
+                    {(searchResult?.posts?.length > 0 ||
+                        searchResult?.courses?.length > 0) &&
+                    !loading ? (
                         <div className="px-6 py-3">
-                            <h4 className="font-semibold text-sm uppercase  ">
+                            <h4 className="font-bold text-black text-sm uppercase  ">
                                 Course
                             </h4>
                             <hr className="cssHr" />
@@ -147,7 +148,7 @@ const SearchBar = () => {
                                 <Link
                                     to={"/course/" + course.id}
                                     key={index}
-                                    className="flex font-semibold text-sm  py-2.5 truncate hover:bg-gray-100 cursor-pointer row"
+                                    className="flex font-semibold text-sm rounded-md py-2.5 truncate hover:bg-gray-100 cursor-pointer row"
                                 >
                                     <div className="w-9 h-9 rounded-full col-lg-3">
                                         <img
@@ -158,7 +159,7 @@ const SearchBar = () => {
                                                     : ""
                                             }
                                             alt="thumbnail"
-                                            className="rounded-full size-full object-cover"
+                                            className="rounded-md size-full object-cover border-1 border-gray-100"
                                         />
                                     </div>
                                     <div className="col-lg-9 ">
@@ -181,12 +182,13 @@ const SearchBar = () => {
                                     </div>
                                 </Link>
                             ))}
-                            {searchResult?.courses?.length === 0 && (
-                                <span className="flex justify-center mt-2 text-sm font-semibold text-gray-500">
-                                    No course found
-                                </span>
-                            )}
-                            <h4 className="mt-2 font-semibold text-sm uppercase ">
+                            {searchResult?.courses?.length === 0 &&
+                                !loading && (
+                                    <span className="flex justify-center mt-2 text-sm font-semibold text-gray-500">
+                                        No course found
+                                    </span>
+                                )}
+                            <h4 className="mt-2 font-bold text-black text-sm uppercase ">
                                 Post
                             </h4>
                             <hr className="cssHr" />
@@ -198,7 +200,7 @@ const SearchBar = () => {
                                         encodeURIComponent(element.title)
                                     }
                                     key={index}
-                                    className="flex font-semibold text-sm  py-2.5 truncate hover:bg-gray-100 cursor-pointer row"
+                                    className="flex font-semibold text-sm rounded-md py-2.5 truncate hover:bg-gray-100 cursor-pointer row"
                                 >
                                     <div className="w-9 h-9 col-lg-3">
                                         <img
@@ -209,7 +211,7 @@ const SearchBar = () => {
                                                     : ""
                                             }
                                             alt="thumbnail"
-                                            className="rounded-full  size-full object-cover"
+                                            className="rounded-md size-full object-cover"
                                         />
                                     </div>
                                     <div className="text-wrap flex items-center col-lg-9">
@@ -219,22 +221,24 @@ const SearchBar = () => {
                                     </div>
                                 </Link>
                             ))}
-                            {searchResult?.posts?.length === 0 && (
+                            {searchResult?.posts?.length === 0 && !loading && (
                                 <span className="flex justify-center mt-2 text-sm font-semibold text-gray-500">
                                     No post found
                                 </span>
                             )}
                         </div>
                     ) : (
-                        <div className="p-4 flex items-center text-xs flex-col ">
-                            <span className="text-base font-bold mb-2">
-                                Not Found
-                            </span>
-                            <span className="mb-1">
-                                No results found for "
-                                <strong>{searchTerm}</strong>".
-                            </span>
-                        </div>
+                        !loading && (
+                            <div className="p-4 flex items-center text-xs flex-col ">
+                                <span className="text-base font-bold mb-2">
+                                    Not Found
+                                </span>
+                                <span className="mb-1">
+                                    No results found for "
+                                    <strong>{searchTerm}</strong>".
+                                </span>
+                            </div>
+                        )
                     )}
                 </div>
             )}

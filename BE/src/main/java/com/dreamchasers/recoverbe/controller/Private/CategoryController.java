@@ -1,13 +1,10 @@
 package com.dreamchasers.recoverbe.controller.Private;
 
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.CourseKit.Category;
+import com.dreamchasers.recoverbe.entity.CourseKit.Category;
 import com.dreamchasers.recoverbe.service.CategoryService;
-import com.dreamchasers.recoverbe.service.CourseService;
-import jakarta.persistence.CascadeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

@@ -14,7 +14,7 @@ public class PPostController {
     private final PostService postService;
 
     @GetMapping("")
-    public ResponseEntity<ResponseObject> getByTitle(@RequestParam String title, @RequestParam(required = false) UUID watch, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<ResponseObject> getByTitle(@RequestParam String title, @RequestParam(required = false) UUID watch, @RequestParam(required = false, defaultValue = "0") int page, @RequestParam(required = false, defaultValue = "5") int size) {
         var result = postService.getByTitle(title, watch, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }

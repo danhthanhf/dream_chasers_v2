@@ -8,7 +8,13 @@ import {
     Navigate,
     Outlet,
 } from "react-router-dom";
-import { publicRoutes, adminRoutes, userRoutes, authRoutes } from "./router";
+import {
+    publicRoutes,
+    adminRoutes,
+    userRoutes,
+    authRoutes,
+    instructorRoutes,
+} from "./router";
 import styles from "./App.module.scss";
 import Header from "./layout/header";
 import LeftNavDash from "./component/dashboard/leftNavDash";
@@ -18,6 +24,9 @@ import { useDispatch, useSelector } from "react-redux";
 import Interceptors from "./Interceptor";
 import loginSlice from "./redux/reducers/loginSlice";
 import Footer from "./layout/footer";
+import { InstructorNav } from "./pages/user/instructor";
+import InstructorHeader from "./layout/header/instructor";
+import { instructorMenuSelector, adminMenuSelector } from "./redux/selector";
 
 const PrivateWrapper = ({ isAuthenticated }) => {
     const dispatch = useDispatch();
@@ -41,6 +50,8 @@ const LoggedWrapper = ({ isAuthenticated }) => {
 function App() {
     const isLoggedIn = useSelector((state) => state.login.isLogin);
     const [isLogged, setIsLogged] = useState(isLoggedIn);
+    const adminShow = useSelector(adminMenuSelector);
+    const instructorShow = useSelector(instructorMenuSelector);
     useEffect(() => {
         if (sessionStorage.getItem("token") !== null) {
             setIsLogged(true);
@@ -48,9 +59,6 @@ function App() {
             setIsLogged(false);
         }
     }, [isLoggedIn]);
-    const value = {
-        ripple: true,
-    };
 
     return (
         <div className={clsx("App ", {})}>
@@ -107,6 +115,34 @@ function App() {
                                     />
                                 </Route>
                             ))}
+
+                            {instructorRoutes.map((route, index) => (
+                                <Route
+                                    exact
+                                    path={route.path}
+                                    key={index}
+                                    element={
+                                        <>
+                                            <InstructorHeader></InstructorHeader>
+                                            <InstructorNav></InstructorNav>
+                                            <div
+                                                className={clsx(
+                                                    "transition-all overflow-h-auo",
+                                                    {
+                                                        "ml-[220px]":
+                                                            instructorShow,
+                                                        "ml-[74px]":
+                                                            !instructorShow,
+                                                    }
+                                                )}
+                                            >
+                                                <route.component />
+                                            </div>
+                                        </>
+                                    }
+                                ></Route>
+                            ))}
+
                             {userRoutes.map((route, index) => (
                                 <Route
                                     key={index}
@@ -132,12 +168,12 @@ function App() {
                                                 >
                                                     <route.component />
                                                 </div>
-                                                <Footer />
                                             </>
                                         }
                                     />
                                 </Route>
                             ))}
+
                             {adminRoutes.map((route, index) => (
                                 <Route
                                     key={index}
@@ -158,7 +194,14 @@ function App() {
                                                     <LeftNavDash></LeftNavDash>
                                                     <div
                                                         className={clsx(
-                                                            styles.adminContent
+                                                            styles.adminContent,
+                                                            "transition-all overflow-h-auo flex-1",
+                                                            {
+                                                                "ml-[220px]":
+                                                                    adminShow,
+                                                                "ml-[74px]":
+                                                                    !adminShow,
+                                                            }
                                                         )}
                                                     >
                                                         <route.component />

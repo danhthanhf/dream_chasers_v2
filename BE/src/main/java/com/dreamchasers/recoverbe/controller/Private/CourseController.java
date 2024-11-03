@@ -1,6 +1,7 @@
 package com.dreamchasers.recoverbe.controller.Private;
 
 import com.dreamchasers.recoverbe.dto.CourseDTO;
+import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.service.CourseService;
 import lombok.RequiredArgsConstructor;
@@ -42,17 +43,23 @@ public class CourseController {
     }
 
     @GetMapping("/category")
-    public ResponseEntity<ResponseObject> getCourseByCategoryId(@RequestParam String id, @RequestParam(defaultValue = "false") boolean deleted, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
-        if (id == null) {
+    public ResponseEntity<ResponseObject> getCourseByCategoryIdAndStatus(@RequestParam String categoryId, @RequestParam String status, @RequestParam(defaultValue = "false") boolean deleted, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+        if (categoryId == null) {
             return ResponseEntity.badRequest().body(ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("UUID string cannot be null").build());
         }
-        var result = courseService.getAllCourseByCategoryId(id, deleted, page, size);
+        var result = courseService.getAllCourseByCategoryId(status.toUpperCase(), categoryId, deleted, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
     @PostMapping("/create")
     public ResponseEntity<ResponseObject> create(@RequestPart CourseDTO course) {
         var result = courseService.createCourse(course);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PutMapping("/{courseId}/status")
+    public ResponseEntity<ResponseObject> changeCourseStatus(@PathVariable UUID courseId, @RequestBody StatusChangeDTO statusChangeDTO) {
+        ResponseObject result = courseService.changeCourseStatus(courseId, statusChangeDTO);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

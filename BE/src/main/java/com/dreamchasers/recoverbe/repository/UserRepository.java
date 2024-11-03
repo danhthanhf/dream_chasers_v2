@@ -1,7 +1,7 @@
 package com.dreamchasers.recoverbe.repository;
 
-import com.dreamchasers.recoverbe.model.User.Role;
-import com.dreamchasers.recoverbe.model.User.User;
+import com.dreamchasers.recoverbe.entity.User.Role;
+import com.dreamchasers.recoverbe.entity.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

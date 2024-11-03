@@ -1,9 +1,5 @@
-import LayOutMyPost from "../../../component/layoutMyPost";
-
 function BookMarkPost() {
-    return <div>
-        <LayOutMyPost page={"BOOK_MARK"}></LayOutMyPost>
-    </div>;
+    return <div>Book mark</div>;
 }
 
 export default BookMarkPost;

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import styles from "./NotFound.module.scss";
 import NotFoundImg from "../../assets/images/404.png";
+import Ink from "react-ink";
+import clsx from "clsx";
 const NotFoundPage = () => {
     return (
         <div className={styles.dashpropsPages404Error}>
@@ -28,7 +30,11 @@ const NotFoundPage = () => {
                     <div className={styles.primaryWrapper}>
                         <button className={styles.primary}>
                             <div className={styles.primary1}>
-                                <Link className={styles.buttons} to="/">
+                                <Link
+                                    className={clsx(styles.buttons, "relative")}
+                                    to="/"
+                                >
+                                    <Ink></Ink>
                                     Go Home
                                 </Link>
                             </div>

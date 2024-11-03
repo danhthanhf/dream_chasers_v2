@@ -2,7 +2,7 @@ package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.CourseDTO;
 import com.dreamchasers.recoverbe.dto.SectionDTO;
-import com.dreamchasers.recoverbe.model.CourseKit.*;
+import com.dreamchasers.recoverbe.entity.CourseKit.*;
 import com.dreamchasers.recoverbe.repository.SectionRepository;
 import com.querydsl.jpa.impl.JPAQuery;
 import jakarta.persistence.EntityManager;
@@ -20,15 +20,17 @@ public class SectionService {
     private final EntityManager entityManager;
 
     public List<Section> createListSectionFromDTO(List<SectionDTO> sections) {
+        if (sections == null || sections.isEmpty()) return null;
         List<Section> result = new ArrayList<>();
         for(var sectionDTO : sections) {
-            var totalDuration = sectionDTO.getLessons().stream().mapToInt(Lesson::getDuration).sum();
 
             var section = Section.builder()
                     .title(sectionDTO.getTitle())
                     .lessons(sectionDTO.getLessons())
-                    .totalDuration(totalDuration)
                     .build();
+            if(sectionDTO.getLessons() == null || sectionDTO.getLessons().isEmpty()) continue;
+            var totalDuration = sectionDTO.getLessons().stream().mapToInt(Lesson::getDuration).sum();
+            section.setTotalDuration(totalDuration);
             result.add(section);
         }
         return result;

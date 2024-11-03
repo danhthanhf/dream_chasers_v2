@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import styles from "./MainDash.module.scss";
-import CoursesComponent from "../../ladingComponent/CourseCard";
+import CoursesComponent from "../../ladingPage/CourseCard";
 import { adminRoutes } from "../../../router/index";
 import { Routes, Route, Router } from "react-router-dom";
 function MainDash() {

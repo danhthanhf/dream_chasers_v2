@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import styles from "../../../user/userProfile/UserProfile.module.scss";
+import styles from "../../../user/profile/UserProfile.module.scss";
 import clsx from "clsx";
-import avatar from "../../../../assets/images/avatar_25.jpg";
 import ShowPassword from "../../../../component/auth/ShowPassword";
 import { useParams } from "react-router-dom";
 import * as userService from "../../../../api/apiService/authService";

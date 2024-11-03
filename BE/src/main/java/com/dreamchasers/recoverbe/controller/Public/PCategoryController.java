@@ -14,6 +14,13 @@ import java.util.UUID;
 public class PCategoryController {
     private final CategoryService categoryService;
 
+    @GetMapping("/price/getAll")
+    public ResponseEntity<ResponseObject> getAllPrice(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+        var result = categoryService.getAllAndPrice(page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+
     @GetMapping("/getAll")
     public ResponseEntity<ResponseObject> getAll(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         var result = categoryService.getAllCategory(page, size);

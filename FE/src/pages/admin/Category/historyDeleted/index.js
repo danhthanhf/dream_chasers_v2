@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import styles from "../../Course/list/List.module.scss";
 import clsx from "clsx";
 import { toast } from "sonner";
-import * as dataApi from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
+import * as publicService from "../../../../api/apiService/publicService";
 import restoreIcon from "../../../../assets/images/restore.svg";
 import DataGridComponent from "../../../../component/table";
 import Modal from "../../../../component/modal";
@@ -140,7 +141,7 @@ function HistoryDeletedCategory() {
         setIsLoadingData(true);
         const fetchApi = () => {
             try {
-                const result = dataApi.getCategoryByTitle(
+                const result = publicService.getCategoryByTitle(
                     e.target.value,
                     page,
                     selected
@@ -170,7 +171,7 @@ function HistoryDeletedCategory() {
     };
 
     const handleRestoreCategory = (id) => {
-        toast.promise(dataApi.restoreCategoryById(id), {
+        toast.promise(adminService.restoreCategoryById(id), {
             loading: "loading...",
             success: () => {
                 setRender(!render);
@@ -186,7 +187,7 @@ function HistoryDeletedCategory() {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getAllCategories(
+                const result = await adminService.getAllCategories(
                     true,
                     page,
                     selected
@@ -205,7 +206,7 @@ function HistoryDeletedCategory() {
     };
 
     const handleRemoveListCategory = async () => {
-        toast.promise(dataApi.restoreListCategory(selectedRow), {
+        toast.promise(adminService.restoreListCategory(selectedRow), {
             loading: "Restoring...",
             success: () => {
                 setRender(!render);

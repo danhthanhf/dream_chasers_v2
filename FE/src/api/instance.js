@@ -31,6 +31,31 @@ export const privateInstance = axios.create({
     baseURL: "http://localhost:8080/api/v1/private",
 });
 
+export const instructorInstance = axios.create({
+    baseURL: "http://localhost:8080/api/v1/instructor",
+});
+
+instructorInstance.interceptors.response.use(
+    function (res) {
+        return res.data;
+    },
+    function (error) {
+        if (error.response.status === 403) {
+            toast.error("You don't have permission to access this page");
+            redirectPage("/");
+        } else if (error.response.status === 401) {
+            sessionExpired();
+        }
+        return Promise.reject(error.response.data);
+    }
+);
+
+instructorInstance.interceptors.request.use(function (config) {
+    const token = sessionStorage.getItem("token");
+    if (token != null) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
 publicInstance.interceptors.response.use(
     function (res) {
         return res.data;
@@ -56,7 +81,6 @@ privateInstance.interceptors.response.use(
             toast.error("You don't have permission to access this page");
             redirectPage("/");
         } else if (error.response.status === 401) {
-            console.log(error);
             sessionExpired();
         }
         return Promise.reject(error.response.data);
@@ -88,6 +112,7 @@ userInstance.interceptors.request.use(function (config) {
         sessionExpired();
     }
     if (token != null) config.headers.Authorization = `Bearer ${token}`;
+    config.headers["Content-Type"] = "application/json";
     return config;
 });
 

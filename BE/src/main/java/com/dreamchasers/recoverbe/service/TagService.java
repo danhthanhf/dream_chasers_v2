@@ -1,15 +1,14 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.model.Post.QTag;
-import com.dreamchasers.recoverbe.model.Post.Tag;
+import com.dreamchasers.recoverbe.entity.Post.QTag;
+import com.dreamchasers.recoverbe.entity.Post.Tag;
 import com.dreamchasers.recoverbe.repository.TagRepository;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAUpdateClause;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 

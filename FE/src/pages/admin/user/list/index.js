@@ -59,16 +59,19 @@ function ListUser() {
             setModalContent({ ...modalContent, isOpen: false });
         },
     });
+
     const columns = [
         {
             field: "user",
             headerName: "User",
             headerClassName: "theme-header",
-            width: 316,
+            width: 447,
             type: "string",
             sortable: true,
             sortComparator: (v1, v2) => {
-                return v1.title - v2.title;
+                return (v1.lastName + v1.firstName).localeCompare(
+                    v2.lastName + v2.firstName
+                );
             },
             renderCell: (params) => {
                 return (
@@ -115,12 +118,12 @@ function ListUser() {
             headerName: "Create At",
             headerClassName: "theme-header",
             sortable: true,
-            type: "dateTime",
+            type: "date",
             width: 220,
             renderCell: (params) => {
-                const date = params.value.toLocaleDateString();
-                const time = params.value.toLocaleTimeString();
-                return <>{date + "" + time}</>;
+                const date = params.value.toLocaleDateString("vi");
+                const time = params.value.toLocaleTimeString("vi");
+                return <>{time + " - " + date}</>;
             },
         },
         {
@@ -128,12 +131,12 @@ function ListUser() {
             headerName: "Updated At",
             headerClassName: "theme-header",
             sortable: true,
-            type: "dateTime",
+            type: "date",
             width: 220,
             renderCell: (params) => {
-                const date = params.value.toLocaleDateString();
-                const time = params.value.toLocaleTimeString();
-                return <>{date + "" + time}</>;
+                const date = params.value.toLocaleDateString("vi");
+                const time = params.value.toLocaleTimeString("vi");
+                return <>{time + " - " + date}</>;
             },
         },
         {

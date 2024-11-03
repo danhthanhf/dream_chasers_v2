@@ -4,50 +4,52 @@ import logoVNPAY from "../../../src/assets/images/vnpay-logo.jpg";
 import clsx from "clsx";
 import styles from "./Payment.module.scss";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import * as userApi from "../../api/apiService/authService";
-import * as dataApi from "../../api/apiService/dataService";
-import { useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
+import * as userService from "../../api/apiService/userService";
+import * as publicService from "../../api/apiService/publicService";
 import { toast } from "sonner";
+
 function Payment() {
-    const { id } = useParams();
-    const user = useSelector((state) => state.login.user);
-    const [paymentInfo, setPaymenInfo] = useState({
-        courseId: id,
-        email: user.email,
-    });
+    const { title } = useParams();
+    const navigate = useNavigate();
     const [course, setCourse] = useState({
         price: 0,
         discount: 0,
         title: "Temp course",
     });
+    const [paymentType, setPaymentType] = useState();
+
     const handleMethodPayment = (e) => {
         if (e.target.checked) {
-            setPaymenInfo({ ...paymentInfo, method: "vnpay" });
+            setPaymentType("vnpay");
         } else {
-            setPaymenInfo({ ...paymentInfo, method: "" });
+            setPaymentType("");
         }
     };
 
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await dataApi.getCourseById(id);
-                setCourse(result.content);
+                const result = await publicService.getCourseByTitle(title);
+                setCourse(result);
             } catch (error) {
                 console.log(error);
+                toast.error("Error when get course");
             }
         };
 
         fetchApi();
-    }, [id]);
+    }, [title]);
 
     const handleGetPayment = () => {
-        if (paymentInfo.method === "vnpay") {
+        if (paymentType === "vnpay") {
             const fetchApi = async () => {
                 try {
-                    const result = await userApi.getPaymentVNPAY(paymentInfo);
-                    window.location.href = result.content;
+                    const result = await userService.getPaymentVNPAY(
+                        paymentType,
+                        course.id
+                    );
+                    window.location.href = result;
                 } catch (error) {
                     console.log(error);
                 }
@@ -131,28 +133,24 @@ function Payment() {
                             <div className="flex gap-2 flex-1">
                                 <img
                                     loading="lazy"
-                                    src={
-                                        course.thumbnail
-                                            ? course.thumbnail
-                                            : avatar
-                                    }
+                                    src={course?.thumbnail}
                                     alt="Course images"
                                     className="object-cover"
                                 />
                                 <div className="text-sm font-bold mr-2">
-                                    {course && course.title}
+                                    {course?.title}
                                 </div>
                             </div>
                             <div className="text-sm">
-                                {course.price && (
+                                {
                                     <div className="text-base">
-                                        {course.price.toLocaleString("vi-VN")}{" "}
+                                        {course?.price.toLocaleString("vi-VN")}{" "}
                                         VND
                                     </div>
-                                )}
-                                {course.discount && course.discount !== 0 && (
+                                }
+                                {course?.discount !== 0 && (
                                     <div className="line-through">
-                                        {course.discount.toLocaleString(
+                                        {course?.discount.toLocaleString(
                                             "vi-VN"
                                         )}{" "}
                                         VND
@@ -169,9 +167,9 @@ function Payment() {
                             <div className={clsx(styles.contentBuild)}>
                                 <div className={clsx(styles.itemBuild, "mb-2")}>
                                     <div>Original Price:</div>
-                                    {course.price && (
+                                    {course?.price && (
                                         <div>
-                                            {course.price.toLocaleString(
+                                            {course?.price.toLocaleString(
                                                 "vi-VN"
                                             )}{" "}
                                             VND
@@ -180,9 +178,9 @@ function Payment() {
                                 </div>
                                 <div className={clsx(styles.itemBuild, "mb-3")}>
                                     <div>Discount:</div>
-                                    {course.discount && (
+                                    {course?.discount && (
                                         <div>
-                                            {course.discount.toLocaleString(
+                                            {course?.discount.toLocaleString(
                                                 "vi-VN"
                                             )}{" "}
                                             VND
@@ -195,12 +193,12 @@ function Payment() {
                                         Total
                                     </div>
                                     <div className="font-bold text-base">
-                                        {course.discount &&
-                                        course.discount !== 0
-                                            ? course.discount.toLocaleString(
+                                        {course?.discount &&
+                                        course?.discount !== 0
+                                            ? course?.discount.toLocaleString(
                                                   "vi-VN"
                                               )
-                                            : course.price.toLocaleString(
+                                            : course?.price.toLocaleString(
                                                   "vi-VN"
                                               )}{" "}
                                         VND

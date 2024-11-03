@@ -2,7 +2,7 @@ import styles from "../../Course/create/CreateCourse.module.scss";
 import clsx from "clsx";
 import { useState } from "react";
 import { toast } from "sonner";
-import * as dataApi from "../../../../api/apiService/dataService";
+import * as adminService from "../../../../api/apiService/adminService";
 
 function CreateCategory() {
     const [category, setCateogry] = useState();
@@ -12,7 +12,7 @@ function CreateCategory() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        toast.promise(dataApi.createCategory(category), {
+        toast.promise(adminService.createCategory(category), {
             loading: "Loading...",
             success: (data) => {
                 setCateogry("");
@@ -27,7 +27,7 @@ function CreateCategory() {
     return (
         <div>
             <div className="container flex flex-col">
-                <div className="wrapMainDash mr-auto w-3/4 ">
+                <div className="wrapMainDash mx-auto w-2/4">
                     <h3 className="titleMainDash">Create a new category</h3>
                     <form
                         className={clsx(
