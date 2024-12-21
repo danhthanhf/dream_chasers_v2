@@ -7,7 +7,7 @@ import ListCourse from "../pages/admin/Course/list";
 import CreateCourse from "../pages/admin/Course/create";
 import EditCourse from "../pages/admin/Course/edit";
 import DetailCourseAdmin from "../pages/admin/Course/detail";
-import DetailCourse from "../pages/course/detail";
+import LearningCourse from "../pages/course/learning";
 import OverviewCourse from "../pages/course/OverviewCourse";
 import ListCategory from "../pages/admin/Category/list";
 import CategoryEdit from "../pages/admin/Category/edit";
@@ -21,7 +21,6 @@ import Payment from "../pages/payment";
 import SuccessPayment from "../pages/payment/success";
 import FailurePayment from "../pages/payment/failure";
 import AdminView from "../pages/admin/user/userProfileAdmin";
-import MyCourses from "../pages/user/course/index";
 import ListInvoice from "../pages/admin/invoice/list";
 import ListDeleteInvoice from "../pages/admin/invoice/historyDelete";
 import CreateUser from "../pages/admin/user/create";
@@ -36,8 +35,13 @@ import AdminViewPost from "../pages/admin/post/view";
 import Instructor from "../pages/user/instructor";
 import InstructorListCourse from "../pages/instructor/course/ListAvailableCourse";
 import InstructorCreateCourse from "../pages/instructor/course/Create";
+import InstructorEditCourse from "../pages/instructor/course/Edit";
 import ListDeletedCourse from "../pages/instructor/course/ListDeletedCourse";
 import MyPostList from "../pages/user/post/MyPostList";
+import MessagesPage from "../pages/Messages";
+import Profile from "../pages/profile";
+import MyLearning from "../pages/user/my-learning";
+import Policy from "../pages/policy-instructor";
 
 const publicRoutes = [
     { path: "/", component: LandingPage },
@@ -46,6 +50,8 @@ const publicRoutes = [
     { path: "/course/overview/:title", component: OverviewCourse },
     { path: "/posts", component: Post },
     { path: "/posts/:title/", component: ViewPost },
+    { path: "/profile/:email/", component: Profile, noFooter: true },
+    { path: "/policy/instrucotr", component: Policy, noFooter: true },
 ];
 
 const authRoutes = [
@@ -54,12 +60,8 @@ const authRoutes = [
 ];
 
 const userRoutes = [
-    { path: "/course/:title", component: DetailCourse },
-    {
-        path: "/course/detail/:title/openComment",
-        component: DetailCourse,
-    },
-    { path: "/me/my-learning", component: MyCourses },
+    { path: "/course/:id", component: LearningCourse },
+    { path: "/me/my-learning", component: MyLearning },
     { path: "/course/:title/payment", component: Payment },
     { path: "/payment/success", component: SuccessPayment },
     { path: "/payment/failure", component: FailurePayment },
@@ -69,23 +71,27 @@ const userRoutes = [
     { path: "/me/posts", component: MyPostList },
     { path: "/posts/:title/view", component: ViewPost },
     { path: "/me/bookmark/posts", component: BookMark },
+    { path: "/message", component: MessagesPage },
 ];
 
 const instructorRoutes = [
     { path: "/instructor-dashboard", component: Instructor },
     {
-        path: "/instructor-dashboard/course/list",
+        path: "/instructor-dashboard/courses",
         component: InstructorListCourse,
     },
     {
-        path: "/instructor-dashboard/course/historyDelete",
+        path: "/instructor-dashboard/courses/historyDelete",
         component: ListDeletedCourse,
     },
     {
-        path: "/instructor-dashboard/course/create",
+        path: "/instructor-dashboard/courses/create",
         component: InstructorCreateCourse,
     },
-    { path: "/instructor-dashboard/course/edit/:id", component: EditCourse },
+    {
+        path: "/instructor-dashboard/courses/:id/update",
+        component: InstructorEditCourse,
+    },
 ];
 
 const adminRoutes = [

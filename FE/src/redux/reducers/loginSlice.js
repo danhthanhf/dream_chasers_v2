@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import websocketService from "../../service/WebsocketService";
 
 const loginSlice = createSlice({
     name: "login",
@@ -14,6 +15,7 @@ const loginSlice = createSlice({
             if (action) {
                 const { token, user } = action.payload;
                 state.user = user;
+                state.token = token;
                 user && sessionStorage.setItem("user", JSON.stringify(user));
                 token && sessionStorage.setItem("token", token);
             }
@@ -25,6 +27,7 @@ const loginSlice = createSlice({
             localStorage.removeItem("prevPath");
             state.isLogin = false;
             state.user = null;
+            websocketService.disconnect();
         },
     },
 });

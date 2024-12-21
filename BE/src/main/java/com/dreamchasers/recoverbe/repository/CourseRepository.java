@@ -6,14 +6,24 @@ import com.dreamchasers.recoverbe.entity.User.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, UUID> {
+
+    @Query(value = "SELECT rating, COUNT(*) AS rating_count " +
+            "FROM rating " +
+            "WHERE course_id = :courseId " +
+            "GROUP BY rating " +
+            "ORDER BY rating DESC", nativeQuery = true)
+    List<Map<Integer, Integer>> countRating(@Param("courseId") UUID courseId);
 
     Page<Course> findAllByAuthorAndStatusAndDeleted(User author, CoursePostStatus status, boolean deleted, Pageable pageable);
 
@@ -46,7 +56,5 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     Page<Course> findAllByCategoriesIdAndDeleted(UUID id, boolean deleted, Pageable pageable);
 
     Page<Course> findAllByCategoriesIdAndStatusAndDeleted(UUID id, CoursePostStatus status, boolean deleted, Pageable pageable);
-
-
 
 }

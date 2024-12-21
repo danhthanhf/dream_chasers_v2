@@ -1,8 +1,8 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.entity.Post.QTag;
-import com.dreamchasers.recoverbe.entity.Post.Tag;
+import com.dreamchasers.recoverbe.entity.post.QTag;
+import com.dreamchasers.recoverbe.entity.post.Tag;
 import com.dreamchasers.recoverbe.repository.TagRepository;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAUpdateClause;

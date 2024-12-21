@@ -1,6 +1,6 @@
 package com.dreamchasers.recoverbe.repository;
 
-import com.dreamchasers.recoverbe.entity.Post.Post;
+import com.dreamchasers.recoverbe.entity.post.Post;
 import com.dreamchasers.recoverbe.entity.User.User;
 import com.dreamchasers.recoverbe.enums.CoursePostStatus;
 import org.springframework.data.domain.Page;
@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, UUID> {
+
     Page<Post> findAllByDeletedAndStatus(boolean isDeleted, CoursePostStatus postStatus, @NonNull Pageable pageable);
 
     Page<Post> findAllByUserAndStatusAndDeleted(User user, CoursePostStatus status,boolean isDeleted, @NonNull Pageable pageable);

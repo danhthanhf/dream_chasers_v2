@@ -4,12 +4,14 @@ import com.dreamchasers.recoverbe.dto.CommentDTO;
 import com.dreamchasers.recoverbe.dto.PagePostDTO;
 import com.dreamchasers.recoverbe.dto.PostDTO;
 import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
+import com.dreamchasers.recoverbe.entity.User.Notification;
+import com.dreamchasers.recoverbe.enums.ReferenceType;
 import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
 import com.dreamchasers.recoverbe.exception.PermissionDeniedException;
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.PermissionUtils;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.entity.Post.Post;
+import com.dreamchasers.recoverbe.entity.post.Post;
 import com.dreamchasers.recoverbe.entity.User.Comment;
 import com.dreamchasers.recoverbe.entity.User.User;
 import com.dreamchasers.recoverbe.enums.CoursePostStatus;
@@ -41,6 +43,11 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final NotificationService notificationService;
 
+    public List<Post> getPostsByUserEmail(User user) {
+        return postRepository.findAllByUserAndStatusAndDeleted(user, CoursePostStatus.APPROVED, false, PageRequest.of(0, 5)).getContent();
+
+    }
+
     public void updatePost(Post post, Post newPost) {
         post.setStatus(newPost.getStatus());
         post.setContent(newPost.getContent());
@@ -60,10 +67,10 @@ public class PostService {
         return ResponseObject.builder().status(HttpStatus.OK).content(postDTO).build();
     }
 
-    public ResponseObject getPostListByUser(CoursePostStatus status, int page, int size) {
+    public ResponseObject getPostListByUser(CoursePostStatus status, boolean delete, int page, int size) {
         var user = userService.getCurrentUser();
 
-        var postsPage = postRepository.findAllByUserAndStatusAndDeleted(user, status, false, PageRequest.of(page, size));
+        var postsPage = postRepository.findAllByUserAndStatusAndDeleted(user, status, delete, PageRequest.of(page, size));
 
         var response = convertService.convertToPagePostDTO(postsPage);
         return ResponseObject.builder().status(HttpStatus.OK).content(response).build();
@@ -74,7 +81,14 @@ public class PostService {
         post.setReasonReject(status.getDetail());
         post.setStatus(status.getStatus());
 
-        notificationService.sendNotificationToUser(null, post.getUser(), null, notificationService.getNotificationType(status.getStatus(), false), post.getTitle(),  "Your post was " + status.getStatus() + " by ADMIN", status.getDetail());
+        var noti = Notification.builder()
+                .recipient(post.getUser())
+                .postTitle(post.getTitle())
+                .title("Your post was " + status.getStatus() + " by ADMIN")
+                .referenceType(ReferenceType.POST)
+                .type(notificationService.getNotificationType(status.getStatus(), false))
+                .build();
+        notificationService.sendNotificationToUser(noti);
 
         postRepository.save(post);
         return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
@@ -172,21 +186,28 @@ public class PostService {
         if(comments == null || comments.isEmpty()) {
             return false;
         }
-        return comments.stream().anyMatch(dto -> dto.getId() == commentId);
+            return comments.stream().anyMatch(dto -> dto.getId().equals(commentId));
     }
 
-    public void addWatchComment(PostDTO post, UUID commentId) {
+
+    private void addWatchComment(PostDTO post, UUID commentId) {
         if(post == null) {
             return;
         }
-        if(commentId != null && isContainComment(post.getComments(), commentId)) {
-            commentRepository.findById(commentId).ifPresent(comment -> post.getComments()
-                    .addFirst(convertService.convertToCommentDTO(comment)));
+        if (commentId != null) {
+            Comment temp = commentRepository.findById(commentId).orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+            CommentDTO cmt = convertService.convertToCommentDTO(temp);
+            if(isContainComment(post.getComments(), commentId)) {
+                post.getComments().removeIf(dto -> dto.getId() == commentId);
+            }
+
+            post.getComments().addFirst(cmt);
         }
     }
 
     public ResponseObject getByTitle(String title, UUID watch, int page, int size) {
-        Post post = postRepository.findByTitle(title);
+        Post post = findByTitle(title);
+
         if (post == null) {
             return ResponseObject.builder().status(HttpStatus.NOT_FOUND).message("Post not found").build();
         }
@@ -213,6 +234,16 @@ public class PostService {
         return ResponseObject.builder().status(HttpStatus.OK).content(pagePostDTO).build();
     }
 
+    public Post saveComment(String title, Comment comment) {
+        Post post = findByTitle(title);
+        if (post == null) {
+            return null;
+        }
+        post.getComments().add(comment);
+        post.setTotalComment(post.getComments().size());
+        return post;
+    }
+
     public Post saveComment(UUID postId, Comment comment) {
         Post post = findById(postId);
         if (post == null) {
@@ -224,14 +255,18 @@ public class PostService {
     }
 
     public int getTotalMainComments(UUID postId) {
+
         return commentRepository.countTotalMainComment(postId);
+    }
+
+    public int countMainComment(Post post) {
+        return (int) post.getComments().stream().filter(comment -> comment.getParentComment() == null).count();
     }
 
     public PostDTO transformPostDTO(Post post, int page, int size) {
         var comments = getCommentsByPost(post.getId(), page, size);
         boolean liked = post.getUser().getFavoritePosts().contains(post);
-        int totalMainComment = getTotalMainComments(post.getId());
-        var totalPageComment = totalMainComment / 5 + 1;
+        var totalPageComment = countMainComment(post) / size + 1;
 
         return PostDTO.builder()
                 .id(post.getId())

@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import styles from "../../admin/Course/list/List.module.scss";
 import clsx from "clsx";
@@ -60,7 +61,7 @@ function List() {
     });
     const [isOpen, setIsOpen] = useState(false);
     const [courseSelected, setCourseSelected] = useState();
-    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const [menuPosition, setMenuPosition] = useState({ toppositionMenu: 0, left: 0 });
 
     const menuRef = useRef(null);
 
@@ -183,11 +184,13 @@ function List() {
                             )}
                         >
                             <Link
-                                to={`/admin/course/detail/${params.value.id}`}
+                                to={`/instructor-dashboard/course/${params.value.id}/detail`}
                             >
                                 <img src={viewIcon} alt="" />
                             </Link>
-                            <Link to={`/admin/course/edit/${params.value.id}`}>
+                            <Link
+                                to={`/instructor-dashboard/courses/${params.value.id}/update`}
+                            >
                                 <img src={editIcon} alt="" />
                             </Link>
                             <button
@@ -258,30 +261,28 @@ function List() {
         status = status.toUpperCase();
 
         if (courseSelected.status === status) {
+            toast.info("Course is already in this status");
             return;
         }
         toast.promise(
             instructorService.processStatusCourse(courseSelected.id, status),
             {
                 loading: "Processing...",
-                success: () => {
+                success: (res) => {
                     const updateCourse = courses.map((course) => {
                         if (course.id === courseSelected.id) {
-                            if (
-                                status == "PUBLISHED" &&
-                                course.status == "DRAFT"
-                            )
+                            if (status == "PUBLISHED")
                                 course.status = "PENDING";
                             else course.status = status;
                         }
                         return course;
                     });
                     setCourses(updateCourse);
-                    return "Process success";
+                    setIsOpen(false);
+                    return res.message;
                 },
                 error: (error) => {
-                    console.log(error);
-                    return "Process error";
+                    return error.message;
                 },
             }
         );
@@ -427,7 +428,26 @@ function List() {
             }
         };
         fetchApi();
-    }, [page, selected, category, reRender, statusCourse]);
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [
+        page,
+        selected,
+        category,
+        reRender,
+        statusCourse,
+        // fetchApiToGetCategories,
+    ]);
+
+    const handleClickOutside = (e) => {
+        if (menuRef.current && !menuRef.current.contains(e.target)) {
+            setIsOpen(false);
+        }
+    };
 
     return (
         <div className="flex justify-center w-full ">
@@ -565,35 +585,53 @@ function List() {
                 title={modalContent.title}
                 description={modalContent.description}
             ></Modal>
-            {isOpen && (
-                <div
-                    ref={menuRef}
-                    className="bg-custom absolute z-10 w-40 mt-2 divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black/5"
-                    style={{
-                        top: `${menuPosition.top}px`,
-                        left: `${menuPosition.left}px`,
-                    }}
-                >
-                    <div className="px-1 py-1">
-                        <button
-                            onClick={() =>
-                                handleChangeStatusCourse("PUBLISHED")
-                            }
-                            className="font-medium group flex w-full text-green-500 items-center rounded-md px-2 py-2.5 text-sm hover:opacity-75 hover:bg-gray-200"
-                        >
-                            Publish
-                        </button>
-                        <button
-                            onClick={() => {
-                                handleChangeStatusCourse("DRAFT");
-                            }}
-                            className="hover:opacity-75 hover:bg-gray-200 font-medium group flex text-yellow-500 w-full items-center rounded-md px-2 py-2.5 text-sm"
-                        >
-                            Draft
-                        </button>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{
+                            opacity: 0,
+                            scale: 0.7,
+                        }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                        }}
+                        exit={{
+                            opacity: 0,
+                            scale: 0.7,
+                        }}
+                        transition={{
+                            duration: 0.4,
+                            ease: [0, 0.71, 0.2, 1.01],
+                        }}
+                        ref={menuRef}
+                        className="bg-custom absolute z-10 w-40 mt-2 divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black/5"
+                        style={{
+                            top: `${menuPosition.top}px`,
+                            left: `${menuPosition.left}px`,
+                        }}
+                    >
+                        <div className="px-1 py-1">
+                            <button
+                                onClick={() =>
+                                    handleChangeStatusCourse("PUBLISHED")
+                                }
+                                className="font-medium group flex w-full text-green-500 items-center rounded-md px-2 py-2.5 text-sm hover:opacity-75 hover:bg-gray-200"
+                            >
+                                Publish
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleChangeStatusCourse("DRAFT");
+                                }}
+                                className="hover:opacity-75 hover:bg-gray-200 font-medium group flex text-yellow-500 w-full items-center rounded-md px-2 py-2.5 text-sm"
+                            >
+                                Draft
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

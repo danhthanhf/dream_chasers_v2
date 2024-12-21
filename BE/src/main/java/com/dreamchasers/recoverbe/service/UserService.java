@@ -1,36 +1,46 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.VNPAY.VNPAYConfig;
-import com.dreamchasers.recoverbe.dto.ResetPasswordDTO;
-import com.dreamchasers.recoverbe.dto.UserAndRoleDTO;
-import com.dreamchasers.recoverbe.dto.UserDTO;
-import com.dreamchasers.recoverbe.enums.MethodPayment;
+import com.dreamchasers.recoverbe.dto.*;
+import com.dreamchasers.recoverbe.entity.CourseKit.Course;
+import com.dreamchasers.recoverbe.entity.CourseKit.Enrollment;
+import com.dreamchasers.recoverbe.entity.CourseKit.Lesson;
+import com.dreamchasers.recoverbe.entity.CourseKit.Rating;
+import com.dreamchasers.recoverbe.entity.Request;
+import com.dreamchasers.recoverbe.entity.User.Comment;
+import com.dreamchasers.recoverbe.entity.User.QUser;
+import com.dreamchasers.recoverbe.enums.CoursePostStatus;
+import com.dreamchasers.recoverbe.enums.NotificationType;
+import com.dreamchasers.recoverbe.enums.RequestType;
+import com.dreamchasers.recoverbe.enums.UserStatus;
 import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.jwt.JwtService;
-import com.dreamchasers.recoverbe.entity.Post.Post;
+import com.dreamchasers.recoverbe.entity.post.Post;
 import com.dreamchasers.recoverbe.entity.User.Role;
 import com.dreamchasers.recoverbe.entity.User.User;
-import com.dreamchasers.recoverbe.repository.CourseRepository;
-import com.dreamchasers.recoverbe.repository.UserRepository;
+import com.dreamchasers.recoverbe.repository.*;
+import com.querydsl.jpa.JPQLQueryFactory;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.awt.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.List;
 
@@ -42,10 +52,273 @@ public class UserService {
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProgressRepository progressRepository;
+    private final RatingRepository ratingRepository;
+    private final CommentRepository commentRepository;
+    private final LessonRepository lessonRepository;
+    private final NotificationRepository notificationRepository;
+
     private final JwtService jwtService;
     private final CloudinaryService cloudinaryService;
     private final EnrollService enrollService;
     private final ConvertService convertService;
+    private final CourseService courseService;
+    private final RatingService ratingService;
+    private final PostRepository postRepository;
+    private final MailService mailService;
+    private final JPAQueryFactory queryFactory;
+
+    public ResponseObject searchContact(String name) {
+      List<User> friends = queryFactory.selectFrom(QUser.user)
+              .where(
+                      QUser.user.firstName.containsIgnoreCase(name)
+                      .or(QUser.user.lastName.containsIgnoreCase(name))
+                      .or(QUser.user.email.containsIgnoreCase(name))
+                      .and(QUser.user.friends.contains(getCurrentUser())))
+              .fetch();
+      var result = convertService.convertToListUserBasicDTO(friends);
+      return ResponseObject.builder().content(result).status(HttpStatus.OK).build();
+    }
+
+    public List<PostDTO> getListPostDTOOfUser(User user) {
+        List<Post> posts = postRepository.findAllByUserAndStatusAndDeleted(user, CoursePostStatus.APPROVED, false, PageRequest.of(0, 20)).getContent();
+        return convertService.convertToListPostDTO(posts);
+    }
+
+    public List<CourseDTO> getListCourseDTOOfUser(User user) {
+        List<Course> courses = courseRepository.findAllByAuthorAndStatusAndDeleted(user, CoursePostStatus.PUBLISHED, false, PageRequest.of(0, 20)).getContent();
+        return convertService.convertToListCourseDTO(courses);
+    }
+
+    public ResponseObject getEnrolledCourse(int page, int size) {
+        var user = getCurrentUser();
+        List<Enrollment> enrollments = enrollService.getByUser(user);
+        var result = convertService.convertToListEnrollmentDTO(enrollments);
+        return ResponseObject.builder().status(HttpStatus.OK).content(result).build();
+    }
+
+    public User getByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+
+    public ResponseObject getProfile() {
+        var content = getCurrentUser();
+        var user = userRepository.findByEmail(content.getEmail()).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        return ResponseObject.builder().status(HttpStatus.OK).content(convertService.convertToUserBasicDTO(user)).build();
+    }
+
+    public ResponseObject getUserProfile(String email, String type) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+
+        if(Objects.equals(type.toLowerCase(), "post")) {
+            ProfileDTO<PostDTO> profile = new ProfileDTO<>(
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getBio(),
+                    user.getAvatarUrl(),
+                    user.getPhoneNumber(),
+                    getListPostDTOOfUser(user)
+            );
+            return ResponseObject.builder().status(HttpStatus.OK).content(profile).build();
+        }
+        else {
+            ProfileDTO<CourseDTO> profile = new ProfileDTO<>(
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getBio(),
+                    user.getAvatarUrl(),
+                    user.getPhoneNumber(),
+                    getListCourseDTOOfUser(user)
+            );
+            return ResponseObject.builder().status(HttpStatus.OK).content(profile).build();
+        }
+
+    }
+
+    public ResponseObject getNotifications(int page, int size) {
+        var user = getCurrentUser();
+        var notifications = notificationRepository.findAllByRecipientEmail(user.getEmail(), PageRequest.of(page, size));
+        var result = ResponseObject.builder().status(HttpStatus.OK).content(notifications).build();
+        return result;
+    }
+
+    public Comment findCommentById(UUID commentId) {
+         return commentRepository.findById(commentId).orElseThrow(() -> new EntityNotFoundException("Comment not found"));
+    }
+
+    private void deleteRepliesComment(Comment parentComment) {
+        parentComment.getReplies().forEach(reply -> {
+            reply.setDeleted(true);
+            commentRepository.save(reply);
+            deleteRepliesComment(reply);
+        });
+    }
+
+    public ResponseObject deleteComment(UUID commentId, String type, UUID referenceId) {
+        if(Objects.equals(type, "post")) {
+            Post post = postRepository.findById(referenceId).orElseThrow(() -> new EntityNotFoundException("Post not found"));
+            post.getComments().removeIf(comment -> comment.getId().equals(commentId));
+            post.setTotalComment(post.getTotalComment() - 1);
+        }
+        else if(Objects.equals(type, "lesson")) {
+            Lesson lesson = lessonRepository.findById(referenceId).orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
+            lesson.getComments().removeIf(comment -> comment.getId().equals(commentId));
+        }
+        var comment = findCommentById(commentId);
+        comment.setDeleted(true);
+        deleteRepliesComment(comment);
+        commentRepository.save(comment);
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+    }
+
+    public ResponseObject updateComment(CommentDTO comment) {
+        var c = findCommentById(comment.getId());
+        c.setContent(comment.getContent());
+        commentRepository.save(c);
+        return ResponseObject.builder().content(comment).status(HttpStatus.OK).build();
+    }
+
+//    public ResponseObject followComment(UUID commentId) {
+//        var user =  (User) getUserByEmail(getCurrentUser().getEmail()).getContent();
+//        var comment = commentRepository.findById(commentId).orElseThrow(() -> new EntityNotFoundException("Ask not found"));
+//
+//        if(!user.getFollowedComment().stream().filter(c -> c.getId() == comment.getId()).toList().isEmpty()) {
+//            return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Cannot follow your own comment").build();
+//        }
+//        comment.setTotalFollowers(comment.getTotalFollowers() + 1);
+//
+//        user.getFollowedComment().add(comment);
+//        userRepository.save(user);
+//        return ResponseObject.builder().status(HttpStatus.CREATED).build();
+//    }
+
+//    public ResponseObject unFollowComment(UUID commentId) {
+//        var user =  (User) getUserByEmail(getCurrentUser().getEmail()).getContent();
+//        var comment = commentRepository.findById(commentId).orElseThrow(() -> new EntityNotFoundException("Ask not found"));
+//        user.getFollowedComment().remove(comment);
+//        comment.setTotalFollowers(comment.getTotalFollowers() + 1);
+//        userRepository.save(user);
+//        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+//    }
+
+    public void updateStatus(String email, UserStatus status) {
+        User user = (User) getUserByEmail(email).getContent();
+
+        user.setStatus(status);
+        if(status == UserStatus.OFFLINE) {
+            user.setLastOnline(LocalDateTime.now());
+        }
+
+        userRepository.save(user);
+    }
+
+    public ResponseObject commentCourse(UUID courseId, UUID lessonId, CommentDTOInCourse request) {
+        var user = getCurrentUser();
+        var course = courseRepository.findById(courseId).orElseThrow(() -> new EntityNotFoundException("Course not found"));
+        var lesson = course.getSections().stream()
+                .flatMap(section -> section.getLessons().stream()
+                        .filter(lesson1 -> lesson1.getId().equals(lessonId))
+                )
+                .findFirst().orElseThrow(() -> new EntityNotFoundException("Lesson not found"));
+
+        var comment = Comment.builder()
+                .content(request.getContent())
+                .courseId(courseId)
+                .lessonId(lessonId)
+                .title(request.getTitle())
+                .author(user)
+                .build();
+        lesson.getComments().add(comment);
+
+        lessonRepository.save(lesson);
+
+        comment.setCreatedAt(LocalDateTime.now());
+        var result = convertService.convertToCommentDTO(comment);
+        return ResponseObject.builder().status(HttpStatus.CREATED).content(result).build();
+    }
+
+    public void updateRatingCourse(UUID courseId, Rating rate) {
+
+        var course = courseService.getById(courseId);
+
+        Rating rating = ratingRepository.findByUserIdAndCourseId(getCurrentUser().getId(), courseId).orElse(null);
+
+        if(rating == null) {
+            rating = Rating.builder().courseId(courseId).user(getCurrentUser())
+                    .comment(rate.getComment())
+                    .rating(rate.getRating())
+                    .build();
+            if(course.getTotalRating() == 0) {
+                course.setScoreRating(rate.getRating());
+            }
+            else {
+                course.setScoreRating((course.getScoreRating() * course.getTotalRating() + rate.getRating()) / (course.getTotalRating() + 1));
+            }
+            course.getRatings().add(rating);
+            course.setTotalRating(course.getTotalRating() + 1);
+        }
+        else {
+            rating.setRating(rate.getRating());
+            rating.setComment(rate.getComment());
+            rating.setUser(getCurrentUser());
+        }
+        ratingRepository.save(rating);
+    }
+
+    public ResponseObject rateCourse(UUID courseId, Rating rating) {
+        updateRatingCourse(courseId, rating);
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
+    }
+
+    public ResponseObject completedLesson(UUID courseId, UUID lessonId) {
+        var enrollment = enrollService.getByUserAndCourseId(getCurrentUser(), courseId);
+
+        //  check is completed course
+        if(enrollment.getTotalCompletedLessons() == enrollment.getTotalLessons() - 1) {
+            enrollment.setCompleted(true);
+
+            // send email completed course
+            var fullName = (enrollment.getUser().getFirstName().isEmpty() ? "" : enrollment.getUser().getFirstName())  + " " + enrollment.getUser().getLastName();
+            mailService.sendCompletedCourse(enrollment.getUser().getEmail(), enrollment.getCourse().getTitle(), fullName);
+        }
+        for(var i = 0; i < enrollment.getProgresses().size(); i++) {
+                if(enrollment.getProgresses().get(i).getLesson().getId().equals(lessonId))
+                {
+                    enrollment.getProgresses().get(i).setCompleted(true);
+                    enrollment.setTotalCompletedLessons(enrollment.getTotalCompletedLessons() + 1);
+                    if(enrollment.getTotalLessons() == enrollment.getTotalCompletedLessons()) {
+                        enrollment.setCompleted(true);
+                    }
+
+                    if(i + 1 < enrollment.getProgresses().size()) {
+                        enrollment.getProgresses().get(i + 1).setLocked(false);
+                    }
+                    progressRepository.save(enrollment.getProgresses().get(i));
+                    break;
+                }
+            }
+
+        var dto = convertService.convertToEnrollmentDTO(enrollment);
+        return ResponseObject.builder().content(dto).status(HttpStatus.OK).build();
+    }
+
+    public ResponseObject getProgress(UUID courseId) {
+        var user = getCurrentUser();
+
+        var enrollment = enrollService.getByCourseAndUser(user.getId(), courseId);
+
+        var enrollmentDTO = convertService.convertToEnrollmentDTO(enrollment);
+
+        var rating = ratingService.getRatingByUserAndCourse(user.getId(), courseId);
+
+        var ratingDTO = convertService.convertToRatingDTO(rating);
+        enrollmentDTO.setMyRating(ratingDTO);
+
+        return ResponseObject.builder().status(HttpStatus.OK).content(enrollmentDTO).build();
+    }
 
     public User findById(UUID id) {
         return userRepository.findById(id).orElse(null);
@@ -146,9 +419,9 @@ public class UserService {
         return user.getFavoritePosts().contains(post);
     }
 
-    public ResponseObject checkEnrollment(String title) {
+    public ResponseObject checkEnrollment(UUID id) {
         var user = getCurrentUser();
-        var course = courseRepository.findByTitle(title).orElseThrow(() -> new EntityNotFoundException("Course not found"));
+        var course = courseRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Course not found"));
 
         boolean isEnrolled = enrollService.isUserEnrolled(user.getId(), course.getId());
 
@@ -156,6 +429,21 @@ public class UserService {
         return ResponseObject.builder().content(courseDTO).status(HttpStatus.OK).message("User can enroll this course").build();
     }
 
+    public ResponseObject enrollCourse(User user, UUID courseId) {
+        if(enrollService.isUserEnrolled(user.getId(), courseId)){
+            return ResponseObject.builder()
+                    .content("User already enrolled this course")
+                    .status(HttpStatus.CONFLICT)
+                    .build();
+        }
+
+        enrollService.enrollCourse(user, courseId);
+
+        return ResponseObject.builder()
+                .content("Enroll course successfully")
+                .status(HttpStatus.OK)
+                .build();
+    }
     public ResponseObject enrollCourse(UUID courseId) {
         var user = getCurrentUser();
         if(enrollService.isUserEnrolled(user.getId(), courseId)){
@@ -210,6 +498,7 @@ public class UserService {
         }
         user.setAvatarUrl(userDTO.getAvatarUrl());
         user.setFirstName(userDTO.getFirstName());
+        user.setBio(userDTO.getBio());
         user.setLastName(userDTO.getLastName());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user = userRepository.save(user);

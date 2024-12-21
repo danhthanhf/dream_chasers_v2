@@ -1,9 +1,11 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.UserDTO;
+import com.dreamchasers.recoverbe.enums.UserStatus;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.helper.Request.RegisterRequest;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.jwt.JwtService;
 import com.dreamchasers.recoverbe.entity.User.Role;
 import com.dreamchasers.recoverbe.entity.User.User;
@@ -33,6 +35,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserService userService;
+    private final ConvertService convertService;
 
 
     private boolean isEmailExist(String email) {
@@ -61,24 +64,9 @@ public class AuthService {
 
     public User refreshAccessToken(User user) {
         if(user == null) return null;
-        if(user.getAccessToken() == null) {
-            user.setAccessToken(jwtService.generateAccessToken(user));
-        }
-        else {
-            user.setAccessToken(jwtService.refreshToken(user.getAccessToken()));
-        }
-        return user;
-    }
+        user.setAccessToken(jwtService.generateAccessToken(user));
 
-    public UserDTO transferEntityToDTO(User user) {
-        return UserDTO.builder()
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .avatarUrl(user.getAvatarUrl())
-                .accessToken(user.getAccessToken())
-                .role(user.getRole())
-                .build();
+        return user;
     }
 
     public ResponseObject authenticate(AuthenticationRequest request) {
@@ -90,9 +78,13 @@ public class AuthService {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
             user = refreshAccessToken(user);
 
-            UserDTO userDTO = transferEntityToDTO(user);
+            UserDTO userDTO = convertService.convertToUserDTO(user);
+
+            userService.updateStatus(user.getEmail(), UserStatus.ONLINE);
+
             return ResponseObject.builder().status(HttpStatus.OK).content(userDTO).build();
 
         } catch (UsernameNotFoundException ex) {
@@ -132,7 +124,6 @@ public class AuthService {
         mailService.sendMailResetPassword(email, code);
         return ResponseObject.builder().status(HttpStatus.OK).message("Gửi mã thành công!").content(code).build();
     }
-
 
     public ResponseObject resetPassword(AuthenticationRequest request) {
         var optionalUser = userRepository.findByEmail(request.getEmail());

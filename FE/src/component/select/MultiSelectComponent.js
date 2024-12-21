@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { image } from "@nextui-org/react";
+import Ink from "react-ink";
 
-const useOutsideClick = (ref, callback) => {
+export const useOutsideClick = (ref, callback) => {
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (ref.current && !ref.current.contains(event.target)) {
@@ -17,18 +19,21 @@ const useOutsideClick = (ref, callback) => {
     }, [ref, callback]);
 };
 
-function SelectComponent({
+function MultiSelectComponent({
     title = "Select",
     data,
     value = [],
     handleChange = () => {},
     maxValues = 3,
+    placeholder = "+ Tags",
+    noLabel = false,
 }) {
     const [isShowSelect, setIsShowSelect] = useState(false);
     const id = useId();
     const [listSelected, setListSelected] = useState([...value]);
     const [listDataToShow, setLstDataToShow] = useState([...data]);
     const selectRef = useRef(null);
+
     useEffect(() => {
         setLstDataToShow(data);
         setListSelected(value);
@@ -102,6 +107,7 @@ function SelectComponent({
     useOutsideClick(selectRef, () => {
         setIsShowSelect(false);
     });
+
     return (
         <div
             className={
@@ -109,12 +115,14 @@ function SelectComponent({
             }
         >
             <div>
-                <label
-                    className="text-sm z-20 absolute -top-2 left-2 px-1 font-bold bg-white"
-                    htmlFor={id}
-                >
-                    {title}
-                </label>
+                {!noLabel && (
+                    <label
+                        className="text-sm z-20 absolute -top-2 left-2 px-1 font-bold bg-white"
+                        htmlFor={id}
+                    >
+                        {title}
+                    </label>
+                )}
                 <div className="w-full relative flex items-center">
                     <div className="flex gap-2 p-[9px] items-center flex-1 flex-wrap">
                         {value &&
@@ -122,9 +130,18 @@ function SelectComponent({
                             value.map((item, index) => (
                                 <div
                                     key={item.value + index}
-                                    className="cursor-pointer hover:opacity-100 opacity-90 transition-all delay-50 ease-linear flex text-[13px] font-bold bg-[#d6f4f9] rounded-lg p-1 text-[#006C9C]"
+                                    className="cursor-pointer hover:opacity-100 opacity-90 transition-all delay-50 ease-linear flex text-[13px] font-bold bg-[#d6f4f9] rounded-lg p-1 text-[#006C9C] center"
                                 >
-                                    <span className="px-1.5">{item.label}</span>
+                                    <div className="px-1.5 flex gap-1.5 center">
+                                        {item.img && (
+                                            <img
+                                                src={item.img}
+                                                className="rounded-full w-6 h-6"
+                                                alt=""
+                                            />
+                                        )}
+                                        {item.label}
+                                    </div>
                                     <svg
                                         onClick={() => handleRemove(item)}
                                         className="w-4 h-4 cursor-pointer hover:opacity-100 opacity-70"
@@ -144,7 +161,7 @@ function SelectComponent({
 
                         <input
                             id={id}
-                            placeholder="+ Tags"
+                            placeholder={placeholder}
                             onKeyDown={handleKeyDown}
                             onChange={handleSerach}
                             onClick={() =>
@@ -158,7 +175,7 @@ function SelectComponent({
                     </div>
                     {listSelected.length > 0 && (
                         <button
-                            className="rounded-full hover:bg-gray-200 hover:opacity-80 p-1 mr-2"
+                            className="relative rounded-full hover:bg-gray-200 hover:opacity-80 p-1 mr-2"
                             type="button"
                             aria-label="Clear"
                             title="Clear"
@@ -173,6 +190,7 @@ function SelectComponent({
                             >
                                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
                             </svg>
+                            <Ink></Ink>
                         </button>
                     )}
                     <motion.div
@@ -192,7 +210,7 @@ function SelectComponent({
                                     key={index}
                                     onClick={() => handleAdd(item)}
                                     className={clsx(
-                                        "text-sm text-gray-600 font-semibold p-2 my-1 hover:bg-gray-200 hover:opacity-75  ease-in cursor-pointer rounded-lg",
+                                        "text-sm flex gap-2 items-center relative text-gray-600 font-semibold p-2 my-1 hover:bg-gray-200 hover:opacity-75  ease-in cursor-pointer rounded-lg",
                                         {
                                             "bg-gray-200": isSelectedItem(
                                                 item.value
@@ -200,6 +218,14 @@ function SelectComponent({
                                         }
                                     )}
                                 >
+                                    <Ink></Ink>
+                                    {item.img && (
+                                        <img
+                                            src={item.img}
+                                            className="rounded-full w-6 h-6"
+                                            alt=""
+                                        />
+                                    )}
                                     {item.label}
                                 </div>
                             ))
@@ -215,4 +241,4 @@ function SelectComponent({
     );
 }
 
-export default SelectComponent;
+export default MultiSelectComponent;

@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
 
-    @Query(value = "select * from comment c left join  post_comments pc on c.id = pc.comments_id where pc.post_id = :postId and c.parent_id is :parentId ORDER BY created_at DESC", nativeQuery = true)
+    @Query(value = "select * from comment c left join  post_comments pc on c.id = pc.comments_id where pc.post_id = :postId and c.parent_id is :parentId and c.deleted = 0 ORDER BY created_at DESC", nativeQuery = true)
     Page<Comment> findAllByPostIdAndParentCommentIdOrderByCreatedAt(UUID postId, UUID parentId, Pageable pageable);
 
 

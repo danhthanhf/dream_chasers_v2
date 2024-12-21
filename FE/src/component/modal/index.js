@@ -8,6 +8,7 @@ function Modal({
     isOpen,
     closeModal,
     handleRemove,
+    
     title = "Delete",
     description,
     isReject = false,

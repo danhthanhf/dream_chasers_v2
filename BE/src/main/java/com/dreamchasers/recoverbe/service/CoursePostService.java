@@ -1,12 +1,12 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.CoursePostDTO;
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.entity.CourseKit.Course;
 import com.dreamchasers.recoverbe.entity.CourseKit.QCourse;
-import com.dreamchasers.recoverbe.entity.Post.Post;
-import com.dreamchasers.recoverbe.entity.Post.QPost;
+import com.dreamchasers.recoverbe.entity.post.Post;
+import com.dreamchasers.recoverbe.entity.post.QPost;
 import com.querydsl.jpa.impl.JPAQuery;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;

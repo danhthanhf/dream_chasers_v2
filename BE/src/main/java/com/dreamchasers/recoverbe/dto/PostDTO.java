@@ -1,6 +1,6 @@
 package com.dreamchasers.recoverbe.dto;
 
-import com.dreamchasers.recoverbe.entity.Post.Tag;
+import com.dreamchasers.recoverbe.entity.post.Tag;
 import com.dreamchasers.recoverbe.enums.CoursePostStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

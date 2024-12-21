@@ -27,6 +27,7 @@ import Footer from "./layout/footer";
 import { InstructorNav } from "./pages/user/instructor";
 import InstructorHeader from "./layout/header/instructor";
 import { instructorMenuSelector, adminMenuSelector } from "./redux/selector";
+import websocketService from "./service/WebsocketService";
 
 const PrivateWrapper = ({ isAuthenticated }) => {
     const dispatch = useDispatch();
@@ -55,6 +56,7 @@ function App() {
     useEffect(() => {
         if (sessionStorage.getItem("token") !== null) {
             setIsLogged(true);
+            websocketService.connect(sessionStorage.getItem("token"));
         } else {
             setIsLogged(false);
         }
@@ -78,7 +80,7 @@ function App() {
                                             <div className={clsx("pt-header")}>
                                                 <route.component />
                                             </div>
-                                            <Footer />
+                                            {route.noFooter ? null : <Footer />}
                                         </>
                                     }
                                 />
@@ -100,7 +102,7 @@ function App() {
                                         element={
                                             <>
                                                 {!route.path.includes(
-                                                    "/course/detail"
+                                                    "/courses/detail"
                                                 ) && <Header />}
                                                 <div
                                                     className={clsx(
@@ -158,13 +160,18 @@ function App() {
                                         key={index}
                                         element={
                                             <>
-                                                {!route.path.includes(
-                                                    "/course/detail"
-                                                ) && <Header />}
+                                                <>
+                                                    {!/^\/course\/[^/]+$/.test(
+                                                        route.path
+                                                    ) && <Header />}
+                                                </>
                                                 <div
-                                                    className={clsx(
-                                                        "pt-header"
-                                                    )}
+                                                    className={clsx({
+                                                        "pt-header":
+                                                            !/^\/course\/[^/]+$/.test(
+                                                                route.path
+                                                            ),
+                                                    })}
                                                 >
                                                     <route.component />
                                                 </div>

@@ -19,7 +19,6 @@ public class PaymentController {
     private final UserService userService;
 
     @GetMapping("/process/{userId}/{courseId}")
-
     public void processPayment(
             @PathVariable UUID courseId,
             @PathVariable UUID userId,
@@ -28,14 +27,14 @@ public class PaymentController {
             @RequestParam("vnp_TransactionStatus") String transactionStatus,
             HttpServletResponse response) throws IOException {
 
-            log.info("Payment response: {}", responseCode);
+        log.info("Payment response: {}", responseCode);
 
         final String baseUrl = "http://localhost:3000/payment";
-        var user = userService.findById(userId);
+        User user = userService.findById(userId);
         String redirectUrl;
 
         if ("00".equals(transactionStatus)) {
-            var result = userService.enrollCourse(courseId);
+            var result = userService.enrollCourse(user, courseId);
 
             if (result.getStatus() == HttpStatus.BAD_REQUEST) {
                 redirectUrl = String.format("%s/failure?status=%s&email=%s&courseId=%s&content=%s",

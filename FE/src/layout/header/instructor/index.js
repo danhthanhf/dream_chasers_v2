@@ -7,10 +7,8 @@ import clsx from "clsx";
 import Dropdown from "../../../component/dropDown";
 import { useDispatch, useSelector } from "react-redux";
 import NotificationItem from "../../../component/notificationItem";
-import useNotificationWebSocket from "../../../component/notificationWebSocket";
-import * as authService from "../../../api/apiService/authService";
+import * as notificationService from "../../../api/apiService/notificationService";
 import notificationSlice from "../../../redux/reducers/notificationSlice";
-import Ink from "react-ink";
 
 export default function InstructorHeader() {
     const navigate = useNavigate();
@@ -26,13 +24,11 @@ export default function InstructorHeader() {
         }
     }, []);
 
-    useNotificationWebSocket();
-
     useEffect(() => {
         if (!user) return;
         const fetchApi = async () => {
             try {
-                const result = await authService.getAllNotification(
+                const result = await notificationService.getAllNotification(
                     user.email,
                     {
                         page: 0,

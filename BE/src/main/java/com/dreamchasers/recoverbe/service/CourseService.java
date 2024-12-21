@@ -1,48 +1,135 @@
 package com.dreamchasers.recoverbe.service;
 
+import com.dreamchasers.recoverbe.dto.CommentDTOInCourse;
 import com.dreamchasers.recoverbe.dto.CourseDTO;
 import com.dreamchasers.recoverbe.dto.StatusChangeDTO;
+import com.dreamchasers.recoverbe.entity.CourseKit.*;
+import com.dreamchasers.recoverbe.entity.User.Comment;
+import com.dreamchasers.recoverbe.entity.User.QComment;
 import com.dreamchasers.recoverbe.entity.User.User;
+import com.dreamchasers.recoverbe.enums.CommentFilterType;
 import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
-import com.dreamchasers.recoverbe.entity.CourseKit.Course;
-import com.dreamchasers.recoverbe.entity.CourseKit.Section;
 import com.dreamchasers.recoverbe.enums.CoursePostStatus;
 import com.dreamchasers.recoverbe.enums.CoursePrice;
 import com.dreamchasers.recoverbe.repository.CourseRepository;
+import com.dreamchasers.recoverbe.repository.RatingRepository;
+import com.dreamchasers.recoverbe.repository.UserRepository;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class CourseService {
     private final CourseRepository courseRepository;
+    private final RatingRepository ratingRepository;
+    private final UserRepository userRepository;
     private final SectionService sectionService;
     private final CategoryService categoryService;
     private final ConvertService convertService;
-    private final NotificationService notificationService;
-    private final List<CoursePostStatus> availableStatus = List.of(CoursePostStatus.DRAFT, CoursePostStatus.PUBLISHED, CoursePostStatus.PENDING, CoursePostStatus.REJECTED);
+    private final JPAQueryFactory queryFactory;
+
+
+    public ResponseObject getFilteredComment(UUID courseId, UUID lessonId, String orderBy, CommentFilterType type, int page, int size) {
+
+        BooleanBuilder builder = new BooleanBuilder();
+        QComment comment = QComment.comment;
+        JPAQuery<Comment> query;
+        User user = userRepository.findById(getCurrentUser().getId()).orElseThrow(() -> new NoSuchElementException("User does not exist"));
+
+        builder.and(comment.courseId.eq(courseId).and(comment.deleted.eq(false)));
+
+
+        if(lessonId != null) {
+            builder.and(comment.lessonId.eq(lessonId));
+        }
+
+        if(type == CommentFilterType.MY_ASK) {
+            builder.and(comment.author.email.eq(user.getEmail()));
+        }
+//        else if(type == CommentFilterType.MY_FOLLOWING) {
+//            builder.and(comment.in(user.getFollowedComment()));
+//        }
+
+        if ("asc".equalsIgnoreCase(orderBy)) {
+            query = queryFactory.selectFrom(comment).where(builder).orderBy(comment.createdAt.asc());
+        } else {
+            query = queryFactory.selectFrom(comment).where(builder).orderBy(comment.createdAt.desc());
+
+        }
+        Long totalElements = queryFactory
+                .select(comment.count())
+                .from(comment)
+                .where(builder)
+                .fetchOne();
+
+        List<Comment> listAsk = query.limit(size).offset((long) page * size).fetch();
+        var listAskDTO = convertService.convertToListCommentDTOInCourse(listAsk);
+//        updateFollowedInResponse(listAskDTO, user);
+
+        PageImpl<CommentDTOInCourse> pageResult = new PageImpl<>(listAskDTO, PageRequest.of(page, size), totalElements);
+        return ResponseObject.builder().status(HttpStatus.OK).content(pageResult).build();
+    }
+
+//    private void updateFollowedInResponse(List<CommentDTOInCourse> commentDTOS, User user) {
+//        commentDTOS.forEach(commentDTO -> {
+//            if(user.getFollowedComment().contains(commentDTO.getId())) {
+//                commentDTO.setFollowed(true);
+//            }
+//        });
+//    }
+
+    public ResponseObject getRatingsByStarAndComment(UUID courseId, String comment, int star, int page, int size) {
+        var rating = QRating.rating1;
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        builder.and(rating.courseId.eq(courseId));
+
+        if(comment != null && !comment.isEmpty()) {
+            builder.and(rating.comment.containsIgnoreCase(comment));
+        }
+
+        if(star > 0 && star <= 5) {
+            builder.and(rating.rating.eq((double)star));
+        }
+
+        JPAQuery<Rating> ratings = queryFactory.selectFrom(rating)
+                .where(builder);
+
+        var list = ratings.fetch();
+        var totalElements = list.size();
+
+        return ResponseObject.builder().status(HttpStatus.OK).content(new PageImpl<>(list, PageRequest.of(page, size), totalElements)).build();
+    }
 
     public User getCurrentUser() {
         return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
-    public Course changeStatus(UUID courseId, StatusChangeDTO statusChangeDTO) {
+    public ResponseObject getRatingStatistic(UUID courseId) {
+        var count = courseRepository.countRating(courseId);
+
+        Page<Rating> latestRating = ratingRepository.findAllByCourseId(courseId, PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+        var statistic = convertService.convertToStatisticRating(count, latestRating);
+
+        return ResponseObject.builder().status(HttpStatus.OK).content(statistic).build();
+    }
+
+    public ResponseObject adminUpdateCourseStatus(UUID courseId, StatusChangeDTO statusChangeDTO) {
         var course = courseRepository.findById(courseId).orElseThrow(() -> new NoSuchElementException("Course does not exist"));
-        if(statusChangeDTO.getStatus() == CoursePostStatus.PUBLISHED && course.getStatus() == CoursePostStatus.DRAFT)
-            course.setStatus(CoursePostStatus.PENDING);
-        else if(statusChangeDTO.getStatus() == CoursePostStatus.REJECTED) {
+
+        if(statusChangeDTO.getStatus() == CoursePostStatus.REJECTED) {
             course.setReasonReject(statusChangeDTO.getDetail());
             course.setStatus(statusChangeDTO.getStatus());
         }
@@ -50,30 +137,34 @@ public class CourseService {
             course.setReasonReject(null);
             course.setStatus(statusChangeDTO.getStatus());
         }
-        return courseRepository.save(course);
+        courseRepository.save(course);
+
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
     }
 
-    public ResponseObject changeCourseStatus(UUID courseId, StatusChangeDTO statusChangeDTO) {
-        try {
-            var course = changeStatus(courseId, statusChangeDTO);
-
-            notificationService.sendNotificationToUser(null, course.getAuthor(), null, notificationService.getNotificationType(statusChangeDTO.getStatus(), true), course.getTitle(), "Your course was " + course.getStatus() + " by ADMIN",statusChangeDTO.getDetail());
-
-            return ResponseObject.builder().status(HttpStatus.OK).build();
-        } catch (NoSuchElementException e) {
-            return ResponseObject.builder().message(e.getMessage()).status(HttpStatus.BAD_REQUEST).build();
+    private void changeStatus(Course course, CoursePostStatus status) {
+        if(status == CoursePostStatus.PUBLISHED) {
+            course.setStatus(CoursePostStatus.PENDING);
         }
+        else {
+            course.setStatus(status);
+        }
+        courseRepository.save(course);
     }
 
     public ResponseObject authorChangeCourseStatus(UUID courseId, CoursePostStatus status) {
         try {
             var course = courseRepository.findById(courseId).orElseThrow(() -> new NoSuchElementException("Course does not exist"));
-            course.setStatus(status);
-            if(course.getAuthor() != getCurrentUser()) {
+
+            if(!course.getAuthor().getEmail().equals(getCurrentUser().getEmail())) {
                 return ResponseObject.builder().message("You are not the author of this course").status(HttpStatus.BAD_REQUEST).build();
             }
+
+            changeStatus(course, status);
+
             courseRepository.save(course);
-            return ResponseObject.builder().status(HttpStatus.OK).build();
+            var message = "Your course " + course.getTitle() + " has been " + course.getStatus().toString().toLowerCase();
+            return ResponseObject.builder().status(HttpStatus.OK).message(message).build();
         } catch (NoSuchElementException e) {
             return ResponseObject.builder().message(e.getMessage()).status(HttpStatus.BAD_REQUEST).build();
         }
@@ -133,7 +224,7 @@ public class CourseService {
     }
 
     public ResponseObject softDeleteList(List<UUID> ids) {
-        ids.stream().map(id -> getCourseById(id, false)).forEach(responseObject -> {
+        ids.stream().map(id -> getCourseByIdAndDeleted(id, false)).forEach(responseObject -> {
             Course course = (Course) responseObject.getContent();
             if(course != null) {
                 courseRepository.save(course);
@@ -143,8 +234,16 @@ public class CourseService {
         return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
     }
 
-    public ResponseObject getCourseById(UUID id, boolean isDeleted) {
-        Course course = courseRepository.findById(id).orElse(null);
+    public Course getById(UUID id) {
+        return courseRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Course does not exist"));
+    }
+
+    public ResponseObject getCourseById(UUID id) {
+        return ResponseObject.builder().content(getById(id)).status(HttpStatus.OK).build();
+    }
+
+    public ResponseObject getCourseByIdAndDeleted(UUID id, boolean isDeleted) {
+        Course course = getById(id);
         if (course == null || course.isDeleted()) {
             return ResponseObject.builder().message("Course is not exist!").status(HttpStatus.BAD_REQUEST).build();
         }
@@ -194,20 +293,22 @@ public class CourseService {
     public Course createStatusForCourse(Course course, CoursePostStatus status) {
         if(status == CoursePostStatus.PUBLISHED)
             course.setStatus(CoursePostStatus.PENDING);
+        else course.setStatus(status);
         return course;
     }
 
     public ResponseObject createCourse(CourseDTO request) {
+
         if(request.getTitle() == null || request.getCategories() == null) {
             return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Title or categories cannot be null").build();
         }
+        courseRepository.findByTitle(request.getTitle()).ifPresent((course) -> {
+            throw new IllegalArgumentException("Course is already exist!");
+        });
 
-        final ResponseObject[] res = new ResponseObject[1];
-        courseRepository.findByTitle(request.getTitle()).ifPresentOrElse((course) -> res[0] = ResponseObject.builder().message("Course is already exist!").status(HttpStatus.BAD_REQUEST).build(), () -> {
             var categories = categoryService.getListByName(request.getCategories());
-            categoryService.UpdateToTalCourseForList(categories, true);
 
-
+            categoryService.UpdateCountTotalCourseForListCategory(categories, true);
 
             Course newCourse = Course.builder().price(CoursePrice.fromInt(request.getPrice()))
                     .title(request.getTitle())
@@ -224,6 +325,7 @@ public class CourseService {
 
             if(request.getSections() != null && !request.getSections().isEmpty()) {
                 var sections = sectionService.createListSectionFromDTO(request.getSections());
+
                 var totalDuration = sections.stream().mapToInt(Section::getTotalDuration).sum();
                 newCourse.setTotalDuration(totalDuration);
                 newCourse.setSections(sections);
@@ -231,28 +333,28 @@ public class CourseService {
 
             courseRepository.save(newCourse);
 
-            res[0] = ResponseObject.builder().status(HttpStatus.OK).build();
-        });
 
-        return res[0];
+        return ResponseObject.builder().status(HttpStatus.OK).build();
     }
 
     public ResponseObject updateCourse(UUID id, CourseDTO courseDTO) {
-        final ResponseObject[] res = new ResponseObject[1];
-        courseRepository.findById(id).ifPresentOrElse(c -> {
-            c.setThumbnail(courseDTO.getThumbnail());
-            c.setVideo(courseDTO.getVideo());
-            c.setDescription(courseDTO.getDescription());
-            c.setDiscount(courseDTO.getDiscount());
-            c.setTitle(courseDTO.getTitle());
-            sectionService.updateSections(courseDTO, c);
+        var course = courseRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Course does not exist"));
 
-            if (courseDTO.getIsEditedCategories() == 1)
-                categoryService.updateCategoriesForCourse(c, courseDTO.getCategories());
-            courseRepository.save(c);
-            res[0] = ResponseObject.builder().status(HttpStatus.OK).build();
-        }, () -> res[0] = ResponseObject.builder().message("Course does not exist!").status(HttpStatus.BAD_REQUEST).build());
-        return res[0];
+            course.setThumbnail(courseDTO.getThumbnail());
+            course.setVideo(courseDTO.getVideo());
+            course.setDescription(courseDTO.getDescription());
+            course.setDiscount(courseDTO.getDiscount());
+            course.setTitle(courseDTO.getTitle());
+            course.setStatus(courseDTO.getStatus());
+            course.setPrice(CoursePrice.fromInt(courseDTO.getPrice()));
+
+            sectionService.updateSections(courseDTO, course);
+            var newCategory = categoryService.updateCategoriesForCourse(course.getCategories(), courseDTO.getCategories());
+            course.setCategories(newCategory);
+
+            courseRepository.save(course);
+
+        return ResponseObject.builder().status(HttpStatus.NO_CONTENT).build();
     }
 
 }

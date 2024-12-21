@@ -3,6 +3,7 @@ package com.dreamchasers.recoverbe.controller.Public;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.helper.Request.AuthenticationRequest;
 import com.dreamchasers.recoverbe.service.AuthService;
+import com.dreamchasers.recoverbe.service.MailService;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

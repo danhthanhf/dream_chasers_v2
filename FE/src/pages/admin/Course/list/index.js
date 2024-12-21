@@ -64,6 +64,7 @@ function ListCourse() {
             setModalContent({ ...modalContent, isOpen: false });
         },
     });
+
     const columns = [
         {
             field: "course",
@@ -94,7 +95,9 @@ function ListCourse() {
                             </div>
                             <div className={clsx(styles.categories)}>
                                 {params.value.categories &&
-                                    params.value.categories.join(", ")}
+                                    params.value?.categories
+                                        .map((cate) => cate.name)
+                                        .join(", ")}
                             </div>
                         </div>
                     </div>
@@ -187,9 +190,9 @@ function ListCourse() {
                             >
                                 <img src={viewIcon} alt="" />
                             </Link> */}
-                            <Link to={`/admin/course/edit/${params.value.id}`}>
+                            {/* <Link to={`/admin/course/edit/${params.value.id}`}>
                                 <img src={editIcon} alt="" />
-                            </Link>
+                            </Link> */}
                             <button
                                 onClick={() => {
                                     setModalContent({
@@ -378,12 +381,7 @@ function ListCourse() {
                 success: () => {
                     const updateCourse = courses.map((course) => {
                         if (course.id === courseSelected.id) {
-                            if (
-                                status == "PUBLISHED" &&
-                                course.status == "DRAFT"
-                            )
-                                course.status = "PENDING";
-                            else course.status = status;
+                            course.status = status;
                         }
                         return course;
                     });

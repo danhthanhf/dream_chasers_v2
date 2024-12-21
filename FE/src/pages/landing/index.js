@@ -23,7 +23,7 @@ function LandingPageComponent() {
         const token = params.get("token");
         const lastName = params.get("lastName");
         const email = params.get("email");
-        const avatar = params.get("avatar");
+        const avatarUrl = params.get("avatarUrl");
         if (token) {
             dispatch(
                 loginSlice.actions.setLogin({
@@ -31,7 +31,7 @@ function LandingPageComponent() {
                     user: {
                         lastName,
                         email,
-                        avatar,
+                        avatarUrl,
                         firstName: "",
                     },
                 })
@@ -52,9 +52,9 @@ function LandingPageComponent() {
     return (
         <div className="flex flex-col items-center pt-5 bg-white">
             <main className="w-full">
-                <section className="p-4 sm:px-5 sm:py-10 mx-auto lg:max-w-[1200px] max-lg:w-[1200px]">
+                {/* <section className="p-4 sm:px-5 sm:py-10 mx-auto lg:max-w-[1200px] max-lg:w-[1200px]">
                     <SlideShow />
-                </section>
+                </section> */}
                 <div className="flex items-center justify-center">
                     <CourseCard />
                 </div>

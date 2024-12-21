@@ -1,36 +1,38 @@
 import { createSlice } from "@reduxjs/toolkit";
-
 const notificationSlice = createSlice({
     name: "notification",
     initialState: {
         notifications: [],
+        totalCurrentElements: 0,
         totalUnread: 0,
-        totalElements: 0,
+        totalAllElements: 0,
     },
     reducers: {
         add: (state, action) => {
-            state.notifications.unshift(action.payload);
-            state.totalElements++;
-            state.totalUnread++;
+            const notification = action.payload;
+            state.notifications.unshift(notification);
+            if (notification.read === false) {
+                state.totalUnread++;
+            }
+            state.totalAllElements++;
         },
         init: (state, action) => {
-            state.notifications = action.payload.notifications;
-            state.totalUnread = action.payload.totalUnread;
-            state.totalElements = action.payload.totalElements;
+            state.notifications = action.payload.notifications || [];
+            state.totalCurrentElements =
+                action.payload.totalCurrentElements || 0;
+            state.totalUnread = action.payload.totalUnread || 0;
+            state.totalAllElements = action.payload.totalAllElements || 0;
         },
         update: (state, action) => {
-            var unread = 0;
-            state.notifications.map((noti) => {
-                if (noti.id === action.payload.id) {
+            const notification = action.payload;
+            state.notifications = state.notifications.map((noti) => {
+                if (noti.id === notification.id) {
                     noti.read = true;
-                    noti.createdAt = action.payload.createdAt;
-                }
-                if (noti.read === false) {
-                    unread++;
+                    noti.createdAt = notification.createdAt;
+                    state.totalUnread--;
                 }
                 return noti;
             });
-            state.totalUnread = unread;
         },
         readAll: (state) => {
             state.notifications.forEach((noti) => {
@@ -38,10 +40,11 @@ const notificationSlice = createSlice({
             });
             state.totalUnread = 0;
         },
-        removeAll: (state, action) => {
+        removeAll: (state) => {
             state.notifications = [];
             state.totalUnread = 0;
-            state.totalElements = 0;
+            state.totalAllElements = 0;
+            state.totalCurrentElements = 0;
         },
     },
 });

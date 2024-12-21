@@ -2,19 +2,13 @@ import clsx from "clsx";
 import styles from "../../Course/list/List.module.scss";
 import { Fragment, useEffect, useState } from "react";
 import deleteIcon from "../../../../assets/images/delete.svg";
-import noDataIcon from "../../../../assets/images/ic_noData.svg";
-import { Listbox, Transition } from "@headlessui/react";
-import {
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    ChevronUpDownIcon,
-} from "@heroicons/react/20/solid";
 import * as adminService from "../../../../api/apiService/adminService";
 import Modal from "../../../../component/modal";
-import avatar from "../../../../assets/images/avatar_1.jpg";
 import Datepicker from "react-tailwindcss-datepicker";
 import moment from "moment/moment";
 import { toast } from "sonner";
+import Ink from "react-ink";
+import DataGridComponent from "../../../../component/table";
 
 const selectes = [5, 10, 25];
 let timerId;
@@ -24,11 +18,230 @@ function ListInvoice() {
     const [deletedModalOpen, setDeletedModalOpen] = useState(false);
     const [totalData, setTotalData] = useState(0);
     const [deleteId, setDeleteId] = useState(null);
+    const [isOpen, setIsOpen] = useState(false);
     const [selectedSize, setSelectedSize] = useState(selectes[0]);
+    const [selected, setSelected] = useState(selectes[0]);
     const [page, setPage] = useState(0);
+    const [show, setShow] = useState(false);
+    const [invoiceSelected, setInvoiceSelected] = useState(null);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const [selectedRow, setSelectedRow] = useState([]);
+    const [isLoadingData, setIsLoadingData] = useState(false);
+
+    const [value, setValue] = useState({
+        startDate: new Date(),
+        endDate: new Date().setMonth(11),
+    });
+    const [modalContent, setModalContent] = useState({
+        title: "DELETE",
+        description: "Are you sure want to delete?",
+        isReject: false,
+        handleRemove: () => {},
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
+
     const openDeleteModal = (id) => {
         setDeleteId(id);
         setDeletedModalOpen(true);
+    };
+
+    const columns = [
+        {
+            field: "course",
+            headerName: "Course",
+            headerClassName: "theme-header",
+            width: 346,
+            type: "string",
+            sortable: true,
+            sortComparator: (v1, v2) => {
+                return v1.title.localeCompare(v2.title);
+            },
+            renderCell: (params) => {
+                return (
+                    <div
+                        className={clsx(
+                            styles.field,
+                            "flex h-full items-center"
+                        )}
+                    >
+                        <div className={clsx(styles.cssImg)}>
+                            <img src={params.value.thumbnail} alt="" />
+                        </div>
+                        <div className="overflow-hidden">
+                            <div
+                                className={clsx(styles.name, "overflow-hidden")}
+                            >
+                                {params.value.title}
+                            </div>
+                            <div className={clsx(styles.categories)}>
+                                {params.value.categories &&
+                                    params.value?.categories
+                                        .map((cate) => cate.name)
+                                        .join(", ")}
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            field: "createdAt",
+            headerName: "Create At",
+            headerClassName: "theme-header",
+            sortable: true,
+            type: "dateTime",
+            width: 220,
+            renderCell: (params) => {
+                const date = params.value.toLocaleDateString();
+                const time = params.value.toLocaleTimeString();
+                return <>{date + " - " + time}</>;
+            },
+        },
+        {
+            field: "price",
+            headerName: "Price",
+            headerClassName: "theme-header",
+            sortable: true,
+            sortComparator: (v1, v2) => {
+                if (v1.price === "Free" && v2.price === "Free") return 0;
+                if (v1.price === "Free") return -1;
+                if (v2.price === "Free") return 1;
+
+                const price1 = parseFloat(v1.price);
+                const price2 = parseFloat(v2.price);
+
+                return price1 - price2;
+            },
+            width: 250,
+            renderCell: (params) => {
+                return params.value.price === 0
+                    ? "Free"
+                    : `${params.value.price.toLocaleString("vi-VN")} VND (${
+                          params.value.tier
+                      })`;
+            },
+        },
+        {
+            field: "status",
+            headerName: "Status",
+            headerClassName: "theme-header",
+            sortable: false,
+            type: "string",
+            width: 180,
+            renderCell: (params) => {
+                return (
+                    <div className={clsx(styles.name)}>
+                        <span
+                            className={clsx("text-xs", {
+                                tagPending: params.value.status == "PENDING",
+                                "text-gray-700 bg-gray-300 px-2 py-[2px] rounded-md":
+                                    params.value.status == "DRAFT",
+                                tagApproved: params.value.status == "PUBLISHED",
+                                tagRejected: params.value.status == "REJECTED",
+                            })}
+                        >
+                            {params.value.status}
+                        </span>
+                    </div>
+                );
+            },
+        },
+        {
+            field: "actions",
+            headerClassName: "theme-header",
+            width: 180,
+            type: "actions",
+            renderCell: (params) => {
+                return (
+                    <div
+                        className={clsx(
+                            styles.field,
+                            "flex items-center h-full"
+                        )}
+                    >
+                        <div
+                            className={clsx(
+                                styles.name,
+                                "flex gap-4 items-center"
+                            )}
+                        >
+                            {/* <Link
+                                to={`/admin/course/detail/${params.value.id}`}
+                            >
+                                <img src={viewIcon} alt="" />
+                            </Link> */}
+                            {/* <Link to={`/admin/course/edit/${params.value.id}`}>
+                                <img src={editIcon} alt="" />
+                            </Link> */}
+                            <button
+                                onClick={() => {
+                                    setModalContent({
+                                        ...modalContent,
+                                        title: "DELETE",
+                                        isOpen: true,
+                                        description:
+                                            "Are you sure want to delete",
+                                        handleRemove: () =>
+                                            handleRemove(params.value.id),
+                                    });
+                                }}
+                            >
+                                <img
+                                    src={deleteIcon}
+                                    alt=""
+                                    className="cursor-pointer"
+                                />
+                            </button>
+                            <div
+                                className="py-1 px-1 justify-center itesm-center  rounded-full focus:outline-none cursor-pointer hover:bg-gray-300 hover:opacity-80 transition-all delay-50 ease-in menu-button relative"
+                                onClick={(e) =>
+                                    handleMenuButtonClick(e, params.value)
+                                }
+                            >
+                                {" "}
+                                <Ink></Ink>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    strokeWidth={1.5}
+                                    stroke="currentColor"
+                                    className="size-5"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+    ];
+    const handleRowSelection = (selectionModel) => {
+        setSelectedRow(selectionModel);
+    };
+
+    const handleMenuButtonClick = (event, invoice) => {
+        event.stopPropagation();
+
+        setIsOpen((prev) => !prev);
+        setInvoiceSelected(invoice);
+        positionMenu(event);
+    };
+
+    const positionMenu = (event) => {
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        setMenuPosition({
+            top: buttonRect.bottom + window.scrollY,
+            left: buttonRect.right + window.scrollX - 160,
+        });
     };
 
     const handleRemoveInvoice = () => {
@@ -127,18 +340,13 @@ function ListInvoice() {
         };
         fetchApi();
     }, []);
-    const [show, setShow] = useState(false);
     const handleChange = (e) => {
         console.log(e);
     };
     const handleClose = () => {
         setShow(true);
     };
-
-    const [value, setValue] = useState({
-        startDate: new Date(),
-        endDate: new Date().setMonth(11),
-    });
+    const handleRemove = (id) => {};
 
     const handleValueChange = (newValue) => {
         if (newValue.startDate === null && newValue.endDate === null) {
@@ -191,13 +399,13 @@ function ListInvoice() {
                             <div
                                 className={clsx(
                                     styles.contentMain,
-                                    "flex justify-between"
+                                    "flex justify-between gap-3"
                                 )}
                             >
                                 <div
                                     className={clsx(
                                         styles.contentItem,
-                                        "flex-auto flex"
+                                        "w-[240px]"
                                     )}
                                 >
                                     <div className={clsx(styles.formSelect)}>
@@ -213,7 +421,7 @@ function ListInvoice() {
                                 <div
                                     className={clsx(
                                         styles.contentItem,
-                                        "flex-auto"
+                                        "flex-1"
                                     )}
                                 >
                                     <div
@@ -229,326 +437,18 @@ function ListInvoice() {
                                     </div>
                                 </div>
                             </div>
-                            <div className={clsx(styles.mid)}>
-                                <div
-                                    className={clsx(
-                                        styles.titleMid,
-                                        "row rounded-lg"
-                                    )}
-                                >
-                                    <div className="col-lg-1">Id</div>
-                                    <div className="col-lg-3">Customer</div>
-                                    <div className="col-lg-3">Content</div>
-                                    <div className="col-lg-2">Create at</div>
-                                    <div className="col-lg-2">Amount</div>
-                                    <div className="col-lg-1">Action</div>
-                                </div>
-                                <div className={clsx(styles.containerData)}>
-                                    {invoices &&
-                                        invoices.map((invoice, index) => {
-                                            const dateTime = new Date(
-                                                invoice.date
-                                            );
-                                            const date =
-                                                dateTime.toLocaleDateString();
-                                            const time =
-                                                dateTime.toLocaleTimeString();
-                                            return (
-                                                <div
-                                                    key={index}
-                                                    className={clsx(
-                                                        styles.item,
-                                                        "row rounded-lg"
-                                                    )}
-                                                >
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-1"
-                                                        )}
-                                                    >
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name
-                                                            )}
-                                                        >
-                                                            {invoice.id}
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-3 flex "
-                                                        )}
-                                                    >
-                                                        <div
-                                                            className={clsx(
-                                                                styles.cssImg
-                                                            )}
-                                                        >
-                                                            <img
-                                                                src={
-                                                                    invoice.user
-                                                                        .avatar
-                                                                        ? invoice
-                                                                              .user
-                                                                              .avatar
-                                                                        : avatar
-                                                                }
-                                                                alt=""
-                                                            />
-                                                        </div>
-                                                        <div className="overflow-hidden">
-                                                            <div
-                                                                className={clsx(
-                                                                    styles.name
-                                                                )}
-                                                            >
-                                                                {invoice.user
-                                                                    .firstName +
-                                                                    " " +
-                                                                    invoice.user
-                                                                        .lastName}
-                                                            </div>
-                                                            <div
-                                                                className={clsx(
-                                                                    styles.categories
-                                                                )}
-                                                            >
-                                                                {invoice.method}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-3 flex text-sm"
-                                                        )}
-                                                    >
-                                                        {invoice.content}
-                                                    </div>
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-2"
-                                                        )}
-                                                    >
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name
-                                                            )}
-                                                        >
-                                                            {date}
-                                                            <br />
-                                                            {time}
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-2"
-                                                        )}
-                                                    >
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name
-                                                            )}
-                                                        >
-                                                            {invoice.price === 0
-                                                                ? "Free"
-                                                                : `${invoice.total.toLocaleString(
-                                                                      "vi-VN"
-                                                                  )} VND`}
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        className={clsx(
-                                                            styles.field,
-                                                            "col-lg-1"
-                                                        )}
-                                                    >
-                                                        <div
-                                                            className={clsx(
-                                                                styles.name,
-                                                                "flex gap-4"
-                                                            )}
-                                                        >
-                                                            <button
-                                                                onClick={() =>
-                                                                    openDeleteModal(
-                                                                        invoice.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                <img
-                                                                    src={
-                                                                        deleteIcon
-                                                                    }
-                                                                    alt=""
-                                                                    className="cursor-pointer"
-                                                                />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    {!invoices ||
-                                        (!invoices.length && (
-                                            <div
-                                                className={clsx(
-                                                    styles.noData,
-                                                    "flex flex-col justify-center text-center"
-                                                )}
-                                            >
-                                                <img
-                                                    src={noDataIcon}
-                                                    alt=""
-                                                    className={clsx(
-                                                        styles.noDataImg,
-                                                        "m-auto w-32"
-                                                    )}
-                                                />
-                                                <span>No Data</span>
-                                            </div>
-                                        ))}
-                                </div>
-                                <div className={clsx(styles.footer)}>
-                                    <div className={styles.footerItem}>
-                                        Rows per page:
-                                        <div className="b-shadow-light rounded-lg ml-2 w-24">
-                                            <Listbox
-                                                value={selectedSize}
-                                                onChange={
-                                                    handleSelectPageSizeChange
-                                                }
-                                            >
-                                                <div className="relative mt-1">
-                                                    <Listbox.Button className="relative w-full cursor-default rounded-lg bg-white py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-indigo-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-300 sm:text-sm">
-                                                        <span className="block truncate">
-                                                            {selectedSize}
-                                                        </span>
-                                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                                            <ChevronUpDownIcon
-                                                                className="h-5 w-5 text-gray-400"
-                                                                aria-hidden="true"
-                                                            />
-                                                        </span>
-                                                    </Listbox.Button>
-                                                    <Transition
-                                                        as={Fragment}
-                                                        leave="transition ease-in duration-100"
-                                                        leaveFrom="opacity-100"
-                                                        leaveTo="opacity-0"
-                                                    >
-                                                        <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
-                                                            {/* {selectes.map(
-                                                                (
-                                                                    element,
-                                                                    index
-                                                                ) => (
-                                                                    <Listbox.Option
-                                                                        className={({
-                                                                            active,
-                                                                        }) =>
-                                                                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                                                active
-                                                                                    ? "bg-amber-100 text-amber-900"
-                                                                                    : "text-gray-900"
-                                                                            }`
-                                                                        }
-                                                                        value={
-                                                                            element
-                                                                        }
-                                                                    >
-                                                                        {({
-                                                                            selected,
-                                                                        }) => (
-                                                                            <>
-                                                                                <span
-                                                                                    className={`block truncate ${
-                                                                                        selected
-                                                                                            ? "font-medium"
-                                                                                            : "font-normal"
-                                                                                    }`}
-                                                                                >
-                                                                                    {
-                                                                                        element
-                                                                                    }
-                                                                                </span>
-                                                                                {selected ? (
-                                                                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-amber-600">
-                                                                                        <CheckIcon
-                                                                                            className="h-5 w-5"
-                                                                                            aria-hidden="true"
-                                                                                        />
-                                                                                    </span>
-                                                                                ) : null}
-                                                                            </>
-                                                                        )}
-                                                                    </Listbox.Option>
-                                                                )
-                                                            )} */}
-                                                        </Listbox.Options>
-                                                    </Transition>
-                                                </div>
-                                            </Listbox>
-                                        </div>
-                                    </div>
-                                    <div className={clsx(styles.footerItem)}>
-                                        <div className="mr-3">
-                                            <span id="currentPage">
-                                                {page * selectedSize + 1}-
-                                                {totalData <
-                                                page * selectedSize +
-                                                    selectedSize
-                                                    ? totalData
-                                                    : page * selectedSize +
-                                                      selectedSize}
-                                            </span>
-                                            <span> of </span>
-                                            <span id="total">{totalData}</span>
-                                        </div>
-                                        <button
-                                            disabled={page === 0}
-                                            onClick={() =>
-                                                handlePageData("previous")
-                                            }
-                                            className={clsx(
-                                                styles.controlPage,
-                                                {
-                                                    [styles.disableControl]:
-                                                        page === 0,
-                                                }
-                                            )}
-                                        >
-                                            <ChevronLeftIcon></ChevronLeftIcon>
-                                        </button>
-                                        <button
-                                            disabled={
-                                                page * selectedSize +
-                                                    selectedSize >=
-                                                totalData
-                                            }
-                                            onClick={() =>
-                                                handlePageData("next")
-                                            }
-                                            className={clsx(
-                                                styles.controlPage,
-                                                {
-                                                    [styles.disableControl]:
-                                                        page * selectedSize +
-                                                            selectedSize >=
-                                                        totalData,
-                                                }
-                                            )}
-                                        >
-                                            <ChevronRightIcon></ChevronRightIcon>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <DataGridComponent
+                                columns={columns}
+                                rows={reFormat(invoices)}
+                                totalElements={totalData}
+                                handleRowSelection={handleRowSelection}
+                                isLoading={isLoadingData}
+                                paginationModel={{
+                                    pageSize: selected,
+                                    page: page,
+                                }}
+                                setPaginationModel={handlePageData}
+                            ></DataGridComponent>
                         </div>
                     </div>
                 </div>
@@ -565,3 +465,19 @@ function ListInvoice() {
 }
 
 export default ListInvoice;
+
+function reFormat(data) {
+    if (!data || data.length === 0) return [];
+
+    return data.map((item) => {
+        const create = new Date(item.createdAt);
+        return {
+            id: item.id,
+            customer: item,
+            content: item,
+            createdAt: create,
+            amount: item,
+            actions: item,
+        };
+    });
+}

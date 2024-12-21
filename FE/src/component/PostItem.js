@@ -57,7 +57,6 @@ function PostItem({ post, authorView = false }) {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
-
     return (
         <div className="rounded-2xl shadow-md w-full">
             <div className="-mb-6 overflow-hidden rounded-t-2xl">
@@ -79,7 +78,10 @@ function PostItem({ post, authorView = false }) {
                     </svg>
                     <div className="z-[2] mt-1.5 px-6">
                         <img
-                            src="https://api-prod-minimal-v610.pages.dev/assets/images/avatar/avatar-16.webp"
+                            src={
+                                post?.userAvatar ||
+                                "https://api-prod-minimal-v610.pages.dev/assets/images/avatar/avatar-16.webp"
+                            }
                             alt=""
                             className="w-10 h-10 rounded-full"
                         />
@@ -164,7 +166,7 @@ function PostItem({ post, authorView = false }) {
                                     clipRule="evenodd"
                                 ></path>
                             </svg>{" "}
-                            {post && formatNumber(post.views)}
+                            {post.views && formatNumber(post.views)}
                         </div>
 
                         <div className="flex gap-1.5 items-center">
@@ -179,7 +181,8 @@ function PostItem({ post, authorView = false }) {
                                     d="M19.07 4.93a10 10 0 0 0-16.28 11a1.06 1.06 0 0 1 .09.64L2 20.8a1 1 0 0 0 .27.91A1 1 0 0 0 3 22h.2l4.28-.86a1.26 1.26 0 0 1 .64.09a10 10 0 0 0 11-16.28ZM8 13a1 1 0 1 1 1-1a1 1 0 0 1-1 1m4 0a1 1 0 1 1 1-1a1 1 0 0 1-1 1m4 0a1 1 0 1 1 1-1a1 1 0 0 1-1 1"
                                 ></path>
                             </svg>
-                            {post && formatNumber(post.totalComment)}
+                            {post.totalComment &&
+                                formatNumber(post.totalComment)}
                         </div>
 
                         <div className="flex gap-1.5 items-center">
@@ -193,7 +196,7 @@ function PostItem({ post, authorView = false }) {
                                     d="M2 9.137C2 14 6.02 16.591 8.962 18.911C10 19.729 11 20.5 12 20.5s2-.77 3.038-1.59C17.981 16.592 22 14 22 9.138S16.5.825 12 5.501C7.5.825 2 4.274 2 9.137"
                                 ></path>
                             </svg>
-                            {post && formatNumber(post.likes)}
+                            {post.likes && formatNumber(post.likes)}
                         </div>
                     </div>
                 </div>

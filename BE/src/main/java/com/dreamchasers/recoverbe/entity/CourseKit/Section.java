@@ -1,10 +1,7 @@
 package com.dreamchasers.recoverbe.entity.CourseKit;
 
 import com.dreamchasers.recoverbe.helper.Model.BaseModel;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -21,6 +18,7 @@ public class Section extends BaseModel {
     private int totalDuration;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OrderColumn(name = "lessons_order")
     private List<Lesson> lessons = new ArrayList<>();
 
 }

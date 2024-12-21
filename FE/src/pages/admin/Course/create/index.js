@@ -11,7 +11,7 @@ import * as adminService from "../../../../api/apiService/adminService";
 import * as publicService from "../../../../api/apiService/publicService";
 import { toast } from "sonner";
 import btnClose from "../../../../assets/images/btnClose.svg";
-import ReactQuill from "react-quill";
+import ReactQuill from "react-quill-new";
 import SelectComponent from "../../../../component/select/SelectComponent";
 
 const initFormData = {

@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { formatLikeCount, getCommentIdFromUrl } from "../../../util/index";
 import * as publicService from "../../../api/apiService/publicService";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { over } from "stompjs";
@@ -6,8 +7,8 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import InputComponent from "../../../component/InputComponent";
-import * as userService from "../../../api/apiService/authService";
-import SockJS from "sockjs-client";
+import * as authService from "../../../api/apiService/authService";
+import * as userService from "../../../api/apiService/userService";
 import { getTimeElapsed } from "../../../util/index";
 import { sessionExpired } from "../../../api/instance";
 import PaginationItem from "../../../component/Pagination";
@@ -15,18 +16,10 @@ import ListPost from "../../../component/ListPostItem";
 import editIcon from "../../../assets/images/edit.svg";
 import { userSelector } from "../../../redux/selector";
 import { Menu, Transition } from "@headlessui/react";
-import {
-    ArchiveBoxXMarkIcon,
-    ChevronDownIcon,
-    PencilIcon,
-    Square2StackIcon,
-    TrashIcon,
-} from "@heroicons/react/16/solid";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
 import Ink from "react-ink";
-
-const onError = (err) => {
-    console.log(err);
-};
+import websocketService from "../../../service/WebsocketService";
+import { ListUtils } from "ckeditor5";
 
 const showElementToCenter = (e) => {
     e.currentTarget.scrollIntoView({
@@ -41,19 +34,21 @@ function formatDate(date) {
     return new Date(date).toLocaleDateString("en-US", options).replace(",", "");
 }
 
-var stompClient = null;
-
 const ViewPost = ({ adminView = false }) => {
     const { title } = useParams();
     const location = useLocation();
     const hasView = location.pathname.includes("/view");
-
+    const showCommnentById = getCommentIdFromUrl();
     const userInfo = useSelector(userSelector);
     const [post, setPost] = useState({});
     const [comments, setComments] = useState([]);
     const [listViewSubComment, setListViewSubComment] = useState([]);
     const [showReplyBox, setShowReplyBox] = useState({
         id: null,
+    });
+    const [editComment, setEditComment] = useState({
+        id: "",
+        content: "",
     });
     const initComment = {
         author: {
@@ -71,8 +66,8 @@ const ViewPost = ({ adminView = false }) => {
     const [pagination, setPagination] = useState({
         page: 0,
         size: 5,
-        totalPage: 1,
     });
+    const totalPage = useRef(1);
     const [recentPosts, setRecentPosts] = useState([]);
     const [listOpenSubComment, setListOpenSubComment] = useState([]);
     const searchParams = new URLSearchParams(location.search);
@@ -81,7 +76,7 @@ const ViewPost = ({ adminView = false }) => {
     const firstRender = useRef(false);
 
     const handleSavePost = async () => {
-        toast.promise(userService.toggleSavePost(post.id, user.email), {
+        toast.promise(authService.toggleSavePost(post.id, user.email), {
             loading: "loading...",
             success: (result) => {
                 setPost({ ...post, isFavorite: !post.isFavorite });
@@ -94,7 +89,7 @@ const ViewPost = ({ adminView = false }) => {
     };
 
     const handleRemovePost = () => {
-        toast.promise(userService.deletePost(user.email, post.id), {
+        toast.promise(authService.deletePost(user.email, post.id), {
             loading: "Loading...",
             success: (result) => {
                 toast.success(result.mess);
@@ -159,7 +154,7 @@ const ViewPost = ({ adminView = false }) => {
     const handleRemoveComment = (cmtId) => {
         const fetchApi = async () => {
             try {
-                await userService.removeCommentById(userInfo.email, cmtId);
+                await authService.removeCommentById(userInfo.email, cmtId);
                 const result = await publicService.getComments(
                     `/post/${post.id}?page=${pagination.page}&size=${pagination.size}`
                 );
@@ -171,25 +166,6 @@ const ViewPost = ({ adminView = false }) => {
         };
 
         fetchApi();
-    };
-
-    const connect = (postId) => {
-        const Sock = new SockJS("http://localhost:8080/ws");
-        stompClient = over(Sock);
-        stompClient.connect(
-            {},
-            () => {
-                stompClient.subscribe(
-                    `/comment/post/${postId}`,
-                    onMessageReceived
-                );
-            },
-            onError
-        );
-    };
-
-    const onDisconnected = () => {
-        console.log("Disconnect Websocket");
     };
 
     const onMessageReceived = (payload) => {
@@ -233,30 +209,22 @@ const ViewPost = ({ adminView = false }) => {
     };
 
     const SendValue = (sub) => {
-        if (stompClient) {
-            let data = {
-                postId: post.id,
-            };
-            sub
-                ? (data = {
-                      ...data,
-                      ...subComment,
-                  })
-                : (data = {
-                      ...data,
-                      ...comment,
-                  });
-            stompClient.send(
-                `/app/comment/post/${post.id}`,
-                {},
-                JSON.stringify(data)
-            );
-            sub
-                ? setSubComment({ ...subComment, content: "" })
-                : setComment({ ...comment, content: "" });
-        } else {
-            console.log("stompClient is not connected");
-        }
+        let data = {
+            postId: post.id,
+        };
+        sub
+            ? (data = {
+                  ...data,
+                  ...subComment,
+              })
+            : (data = {
+                  ...data,
+                  ...comment,
+              });
+        websocketService.sendMessage(`/app/posts/${post.id}/comments`, data);
+        sub
+            ? setSubComment({ ...subComment, content: "" })
+            : setComment({ ...comment, content: "" });
     };
 
     const recordView = (postId) => {
@@ -266,7 +234,6 @@ const ViewPost = ({ adminView = false }) => {
     const getRencentPost = async () => {
         try {
             const result = await publicService.getPosts(0, 4);
-
             setRecentPosts(result.posts);
         } catch (error) {
             console.log(error);
@@ -275,7 +242,7 @@ const ViewPost = ({ adminView = false }) => {
 
     const handleChangeStatus = (status) => {
         if (status === post.status) return;
-        toast.promise(userService.changeStatusPost(post.id, status), {
+        toast.promise(authService.changeStatusPost(post.id, status), {
             loading: "Loading...",
             success: (response) => {
                 setPost({ ...post, status: response.content.status });
@@ -290,48 +257,61 @@ const ViewPost = ({ adminView = false }) => {
 
     useEffect(() => {
         var timer = null;
-        const fetchApi = async () => {
+        var fetchApi = async () => {
             try {
                 const result = await publicService.getPostByTitle(
                     title,
-                    watchParam,
+                    showCommnentById,
                     pagination
                 );
-                console.log("🚀 ~ fetchApi ~ title:", title);
+
                 const formatCreatedAt = formatDate(result.content.createdAt);
-                setPagination((prev) => {
-                    return {
-                        ...prev,
-                        totalPage: result.content.totalPageComment,
-                    };
-                });
+                console.log(result);
+                totalPage.current = result.content.totalPageComment;
+
                 setPost({ ...result.content, createdAt: formatCreatedAt });
-                setComments(result.content.comments);
+
+                websocketService.subscribe(
+                    `/posts/${result.content.id}/comments`,
+                    onMessageReceived
+                );
+
+                let commentsShow = result.content.comments;
+                setComments((prev) => [...prev, ...commentsShow]);
+
+                firstRender.current = true;
+
                 if (!title) return;
                 timer = setTimeout(() => {
                     recordView(result.content.id);
                 }, 1000);
-                connect(result.content.id);
-                firstRender.current = true;
             } catch (error) {
                 console.log(error);
             }
         };
-        if (!firstRender.current || title !== post.title) {
+
+        if (!firstRender.current) {
             fetchApi();
             getRencentPost();
+            scrollToComment();
         } else {
-            connect(post.id);
             getMoreComments();
         }
-
         return () => {
             clearTimeout(timer);
-            if (stompClient && stompClient.connected) {
-                stompClient.disconnect(onDisconnected, {});
-            }
         };
-    }, [title, watchParam, pagination.page]);
+    }, [title, watchParam, pagination]);
+
+    const scrollToComment = () => {
+        if (showCommnentById) {
+            const element = document.querySelector(
+                `[data-watch="${showCommnentById}"]`
+            );
+            if (element) {
+                element.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    };
 
     const getMoreComments = async () => {
         try {
@@ -347,7 +327,7 @@ const ViewPost = ({ adminView = false }) => {
 
     const handleLike = () => {
         try {
-            userService.toggleLikePost(post.id, user.email);
+            authService.toggleLikePost(post.id, user.email);
             setPost({
                 ...post,
                 likes: post.liked ? post.likes - 1 : post.likes + 1,
@@ -374,6 +354,72 @@ const ViewPost = ({ adminView = false }) => {
         if (status === "PENDING") return "Pending";
         return status;
     };
+
+    const handleEditComment = (cmt) => {
+        if (cmt.id === editComment.id) {
+            setEditComment({ id: "" });
+            return;
+        }
+        setEditComment({ ...cmt });
+    };
+
+    const updateComment = () => {
+        toast.promise(userService.updateComment(editComment), {
+            loading: "Loading...",
+            success: () => {
+                let commentUpdate = comments.map((c) => {
+                    if (c.id === editComment.id) {
+                        c.content = editComment.content;
+                    }
+                    return c;
+                });
+                setComments([...commentUpdate]);
+                setEditComment({ id: "" });
+                return "Update comment successfully";
+            },
+            error: (error) => {
+                return error.mess;
+            },
+        });
+    };
+
+    const handleDeleteComment = (cmt) => {
+        toast.promise(
+            userService.removeCommentByIdInPost(userInfo.email, cmt.id),
+            {
+                loading: "Loading...",
+                success: () => {
+                    let commentUpdate = [];
+                    for (let c of comments) {
+                        let replies = [];
+                        for (let reply of c.replies) {
+                            if (reply.id !== cmt.id) {
+                                replies.push(reply);
+                            }
+                        }
+                        if (c.id !== cmt.id) {
+                            c.replies = replies;
+                            commentUpdate.push(c);
+                        }
+                    }
+                    console.log(commentUpdate);
+
+                    setComments(commentUpdate);
+                    setPost((prev) => {
+                        return {
+                            ...prev,
+                            totalComment: prev.totalComment - 1,
+                        };
+                    });
+                    return "Delete comment successfully";
+                },
+                error: (error) => {
+                    return error.mess;
+                },
+            }
+        );
+    };
+
     return (
         <>
             {hasView && userInfo?.email === post?.email && (
@@ -479,17 +525,20 @@ const ViewPost = ({ adminView = false }) => {
                         {post.title}
                     </h1>
                     <div className="flex gap-3 items-center pb-[64px]">
-                        <div>
+                        <Link to={`/profile/${post.email}`}>
                             <img
-                                className="rounded-full w-16 h-16"
+                                className="rounded-full w-16 h-16 hover:opacity-80 transition-all"
                                 src={post.userAvatar ? post.userAvatar : ""}
                                 alt="Avatar"
                             />
-                        </div>
+                        </Link>
                         <div>
-                            <div className="text-base font-semibold text-white">
+                            <Link
+                                to={`/profile/${post.email}`}
+                                className="hover:underline transition-all text-base font-semibold text-white"
+                            >
                                 {post.userName ? post.userName : ""}
-                            </div>
+                            </Link>
                             <div className="text-sm  text-gray-400 font-semibold">
                                 {post.createdAt}
                             </div>
@@ -528,6 +577,28 @@ const ViewPost = ({ adminView = false }) => {
                             })}
                     </div>
                     <div className="flex gap-4 items-center my-2">
+                        <div className="flex gap-1.5 items-center">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                aria-hidden="true"
+                                role="img"
+                                className="w-6 h-6"
+                                viewBox="0 0 24 24"
+                                width={"1em"}
+                            >
+                                <path
+                                    fill="#637381"
+                                    d="M9.75 12a2.25 2.25 0 1 1 4.5 0a2.25 2.25 0 0 1-4.5 0"
+                                ></path>
+                                <path
+                                    fill="#637381"
+                                    fillRule="evenodd"
+                                    d="M2 12c0 1.64.425 2.191 1.275 3.296C4.972 17.5 7.818 20 12 20s7.028-2.5 8.725-4.704C21.575 14.192 22 13.639 22 12c0-1.64-.425-2.191-1.275-3.296C19.028 6.5 16.182 4 12 4S4.972 6.5 3.275 8.704C2.425 9.81 2 10.361 2 12m10-3.75a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5"
+                                    clipRule="evenodd"
+                                ></path>
+                            </svg>{" "}
+                            {formatLikeCount(post?.views)}
+                        </div>
                         <div
                             onClick={handleLike}
                             className="cursor-pointer flex gap-1.5 items-center"
@@ -560,7 +631,9 @@ const ViewPost = ({ adminView = false }) => {
                                 </svg>
                             )}
 
-                            <span className="text-sm">{post.likes}</span>
+                            <span className="text-sm">
+                                {formatLikeCount(post.likes)}
+                            </span>
                         </div>
                         <div className="flex gap-1.5 items-center">
                             <svg
@@ -576,7 +649,7 @@ const ViewPost = ({ adminView = false }) => {
                                 ></path>
                             </svg>
                             <span className="text-sm">
-                                {post.totalComment || 0}
+                                {formatLikeCount(post.totalComment) || 0}
                             </span>
                         </div>
                     </div>
@@ -589,7 +662,6 @@ const ViewPost = ({ adminView = false }) => {
                             <div className="w-full">
                                 <InputComponent
                                     value={comment.content}
-                                    autoFocus={true}
                                     noLabel={true}
                                     placeholder={
                                         "Write some of your comment..."
@@ -635,7 +707,7 @@ const ViewPost = ({ adminView = false }) => {
                                         item.createdAt
                                     );
                                     return (
-                                        <div key={item.id}>
+                                        <div key={item.id + Math.random(1000)}>
                                             <div
                                                 className="cmt flex gap-3 w-full text-sm relative"
                                                 data-watch={item.id}
@@ -688,60 +760,170 @@ const ViewPost = ({ adminView = false }) => {
                                                                 item.author
                                                                     .lastName}
                                                         </span>
-                                                        <div
-                                                            onClick={(e) =>
-                                                                handleReply(
-                                                                    e,
-                                                                    item,
-                                                                    null,
-                                                                    false
-                                                                )
-                                                            }
-                                                            className={clsx(
-                                                                "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs ",
-                                                                {
-                                                                    "text-[#1c252e]":
-                                                                        item.id !==
-                                                                        showReplyBox.id,
-                                                                    "text-green":
-                                                                        item.id ===
-                                                                        showReplyBox.id,
+                                                        <div className="flex gap-2.5 center">
+                                                            {item.author
+                                                                ?.email ===
+                                                                userInfo?.email && (
+                                                                <div
+                                                                    onClick={() =>
+                                                                        handleDeleteComment(
+                                                                            item
+                                                                        )
+                                                                    }
+                                                                    className={clsx(
+                                                                        "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs relative text-orange-500"
+                                                                    )}
+                                                                >
+                                                                    <Ink></Ink>
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        fill="none"
+                                                                        viewBox="0 0 24 24"
+                                                                        strokeWidth="2.5"
+                                                                        stroke="currentColor"
+                                                                        className="size-4"
+                                                                    >
+                                                                        <path
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                                                                        />
+                                                                    </svg>
+                                                                    Delete
+                                                                </div>
+                                                            )}
+                                                            {item.author
+                                                                ?.email ===
+                                                                userInfo?.email && (
+                                                                <div
+                                                                    onClick={() =>
+                                                                        handleEditComment(
+                                                                            item
+                                                                        )
+                                                                    }
+                                                                    className={clsx(
+                                                                        "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs relative"
+                                                                    )}
+                                                                >
+                                                                    <Ink></Ink>
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        enableBackground="new 0 0 32 32"
+                                                                        viewBox="0 0 32 32"
+                                                                        strokeWidth={
+                                                                            1.5
+                                                                        }
+                                                                        className="w-4 h-4"
+                                                                    >
+                                                                        <path d="M12.82373,12.95898l-1.86279,6.21191c-0.1582,0.52832-0.01367,1.10156,0.37646,1.49121c0.28516,0.28516,0.66846,0.43945,1.06055,0.43945c0.14404,0,0.28906-0.02051,0.43066-0.06348l6.2124-1.8623c0.23779-0.07129,0.45459-0.2002,0.62988-0.37598L31.06055,7.41016C31.3418,7.12891,31.5,6.74707,31.5,6.34961s-0.1582-0.7793-0.43945-1.06055l-4.3501-4.34961c-0.58594-0.58594-1.53516-0.58594-2.12109,0L13.2002,12.3291C13.02441,12.50488,12.89551,12.7207,12.82373,12.95898z M15.58887,14.18262L25.6499,4.12109l2.22852,2.22852L17.81738,16.41113l-3.18262,0.9541L15.58887,14.18262z"></path>
+                                                                        <path d="M30,14.5c-0.82861,0-1.5,0.67188-1.5,1.5v10c0,1.37891-1.12158,2.5-2.5,2.5H6c-1.37842,0-2.5-1.12109-2.5-2.5V6c0-1.37891,1.12158-2.5,2.5-2.5h10c0.82861,0,1.5-0.67188,1.5-1.5S16.82861,0.5,16,0.5H6C2.96729,0.5,0.5,2.96777,0.5,6v20c0,3.03223,2.46729,5.5,5.5,5.5h20c3.03271,0,5.5-2.46777,5.5-5.5V16C31.5,15.17188,30.82861,14.5,30,14.5z"></path>
+                                                                    </svg>
+                                                                    Edit
+                                                                </div>
+                                                            )}
+                                                            <div
+                                                                onClick={(e) =>
+                                                                    handleReply(
+                                                                        e,
+                                                                        item,
+                                                                        null,
+                                                                        false
+                                                                    )
                                                                 }
-                                                            )}
-                                                        >
-                                                            {showReplyBox.id ===
-                                                            item.id ? (
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    aria-hidden="true"
-                                                                    role="img"
-                                                                    className="w-4 h-4"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path
-                                                                        fill="#00a76f"
-                                                                        d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
-                                                                    ></path>
-                                                                </svg>
-                                                            ) : (
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    aria-hidden="true"
-                                                                    role="img"
-                                                                    className="w-4 h-4"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path
-                                                                        fill="#1c252e"
-                                                                        d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
-                                                                    ></path>
-                                                                </svg>
-                                                            )}
-                                                            Reply
+                                                                className={clsx(
+                                                                    "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs ",
+                                                                    {
+                                                                        "text-[#1c252e]":
+                                                                            item.id !==
+                                                                            showReplyBox.id,
+                                                                        "text-green":
+                                                                            item.id ===
+                                                                            showReplyBox.id,
+                                                                    }
+                                                                )}
+                                                            >
+                                                                {showReplyBox.id ===
+                                                                item.id ? (
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        aria-hidden="true"
+                                                                        role="img"
+                                                                        className="w-4 h-4"
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path
+                                                                            fill="#00a76f"
+                                                                            d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
+                                                                        ></path>
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        aria-hidden="true"
+                                                                        role="img"
+                                                                        className="w-4 h-4"
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path
+                                                                            fill="#1c252e"
+                                                                            d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
+                                                                        ></path>
+                                                                    </svg>
+                                                                )}
+                                                                Reply
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div>{item.content}.</div>
+                                                    {editComment?.id ===
+                                                    item.id ? (
+                                                        <div className="relative my-1 rounded-lg items-center border-1 transition-all ease-linear focus-within:border-black border-gray-300 hover:border-black">
+                                                            <div className="p-2 flex flex-col ">
+                                                                <input
+                                                                    value={
+                                                                        editComment?.content
+                                                                    }
+                                                                    autoFocus={
+                                                                        true
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) => {
+                                                                        setEditComment(
+                                                                            (
+                                                                                prev
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                content:
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                            })
+                                                                        );
+                                                                    }}
+                                                                    className={clsx(
+                                                                        "outline-none text-[15px] w-full"
+                                                                    )}
+                                                                />
+                                                                <div className="flex justify-end">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={
+                                                                            updateComment
+                                                                        }
+                                                                        className="relative bg-black rounded-lg text-white text-sm font-semibold px-2 py-1 mt-2 inline-block"
+                                                                    >
+                                                                        <Ink></Ink>
+                                                                        Edit
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            {item.content}.
+                                                        </div>
+                                                    )}
                                                     <div className="text-gray-500 mt-1.5 mb-2 text-[13px] font-normal">
                                                         {date}
                                                         <span className="mx-1.5">
@@ -758,7 +940,6 @@ const ViewPost = ({ adminView = false }) => {
                                                         >
                                                             <div className="w-9 h-[67px] top-[100px] flex-1 absolute left-6 border-custom -translate-y-1/2"></div>
                                                             <InputComponent
-                                                                autoFocus={true}
                                                                 value={
                                                                     subComment.content
                                                                 }
@@ -899,76 +1080,188 @@ const ViewPost = ({ adminView = false }) => {
                                                                                         userName
                                                                                     }
                                                                                 </span>
-                                                                                <div
-                                                                                    onClick={(
-                                                                                        e
-                                                                                    ) =>
-                                                                                        handleReply(
-                                                                                            e,
-                                                                                            subCmt,
-                                                                                            item.id,
-                                                                                            true
-                                                                                        )
-                                                                                    }
-                                                                                    className={clsx(
-                                                                                        "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs ",
-                                                                                        {
-                                                                                            "text-[#1c252e]":
-                                                                                                subCmt.id !==
-                                                                                                showReplyBox.id,
-                                                                                            "text-green":
-                                                                                                subCmt.id ===
-                                                                                                showReplyBox.id,
+                                                                                <div className="center gap-2">
+                                                                                    {subCmt
+                                                                                        .author
+                                                                                        ?.email ===
+                                                                                        userInfo?.email && (
+                                                                                        <div
+                                                                                            onClick={() =>
+                                                                                                handleDeleteComment(
+                                                                                                    subCmt
+                                                                                                )
+                                                                                            }
+                                                                                            className={clsx(
+                                                                                                "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs relative text-orange-500"
+                                                                                            )}
+                                                                                        >
+                                                                                            <Ink></Ink>
+                                                                                            <svg
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                                fill="none"
+                                                                                                viewBox="0 0 24 24"
+                                                                                                strokeWidth="2.5"
+                                                                                                stroke="currentColor"
+                                                                                                className="size-4"
+                                                                                            >
+                                                                                                <path
+                                                                                                    strokeLinecap="round"
+                                                                                                    strokeLinejoin="round"
+                                                                                                    d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                                                                                                />
+                                                                                            </svg>
+                                                                                            Delete
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {subCmt
+                                                                                        .author
+                                                                                        ?.email ===
+                                                                                        userInfo?.email && (
+                                                                                        <div
+                                                                                            onClick={() =>
+                                                                                                handleEditComment(
+                                                                                                    subCmt
+                                                                                                )
+                                                                                            }
+                                                                                            className={clsx(
+                                                                                                "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs relative"
+                                                                                            )}
+                                                                                        >
+                                                                                            <Ink></Ink>
+                                                                                            <svg
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                                enableBackground="new 0 0 32 32"
+                                                                                                viewBox="0 0 32 32"
+                                                                                                strokeWidth={
+                                                                                                    1.5
+                                                                                                }
+                                                                                                className="w-4 h-4"
+                                                                                            >
+                                                                                                <path d="M12.82373,12.95898l-1.86279,6.21191c-0.1582,0.52832-0.01367,1.10156,0.37646,1.49121c0.28516,0.28516,0.66846,0.43945,1.06055,0.43945c0.14404,0,0.28906-0.02051,0.43066-0.06348l6.2124-1.8623c0.23779-0.07129,0.45459-0.2002,0.62988-0.37598L31.06055,7.41016C31.3418,7.12891,31.5,6.74707,31.5,6.34961s-0.1582-0.7793-0.43945-1.06055l-4.3501-4.34961c-0.58594-0.58594-1.53516-0.58594-2.12109,0L13.2002,12.3291C13.02441,12.50488,12.89551,12.7207,12.82373,12.95898z M15.58887,14.18262L25.6499,4.12109l2.22852,2.22852L17.81738,16.41113l-3.18262,0.9541L15.58887,14.18262z"></path>
+                                                                                                <path d="M30,14.5c-0.82861,0-1.5,0.67188-1.5,1.5v10c0,1.37891-1.12158,2.5-2.5,2.5H6c-1.37842,0-2.5-1.12109-2.5-2.5V6c0-1.37891,1.12158-2.5,2.5-2.5h10c0.82861,0,1.5-0.67188,1.5-1.5S16.82861,0.5,16,0.5H6C2.96729,0.5,0.5,2.96777,0.5,6v20c0,3.03223,2.46729,5.5,5.5,5.5h20c3.03271,0,5.5-2.46777,5.5-5.5V16C31.5,15.17188,30.82861,14.5,30,14.5z"></path>
+                                                                                            </svg>
+                                                                                            Edit
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <div
+                                                                                        onClick={(
+                                                                                            e
+                                                                                        ) =>
+                                                                                            handleReply(
+                                                                                                e,
+                                                                                                subCmt,
+                                                                                                item.id,
+                                                                                                true
+                                                                                            )
                                                                                         }
-                                                                                    )}
-                                                                                >
-                                                                                    {showReplyBox.id ===
-                                                                                    subCmt.id ? (
-                                                                                        <svg
-                                                                                            xmlns="http://www.w3.org/2000/svg"
-                                                                                            aria-hidden="true"
-                                                                                            role="img"
-                                                                                            className="w-4 h-4"
-                                                                                            viewBox="0 0 24 24"
-                                                                                        >
-                                                                                            <path
-                                                                                                fill="#00a76f"
-                                                                                                d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
-                                                                                            ></path>
-                                                                                        </svg>
-                                                                                    ) : (
-                                                                                        <svg
-                                                                                            xmlns="http://www.w3.org/2000/svg"
-                                                                                            aria-hidden="true"
-                                                                                            role="img"
-                                                                                            className="w-4 h-4"
-                                                                                            viewBox="0 0 24 24"
-                                                                                        >
-                                                                                            <path
-                                                                                                fill="#1c252e"
-                                                                                                d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
-                                                                                            ></path>
-                                                                                        </svg>
-                                                                                    )}
-                                                                                    Reply
+                                                                                        className={clsx(
+                                                                                            "font-bold px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-all delay-50 ease-linear cursor-pointer flex gap-2 text-xs ",
+                                                                                            {
+                                                                                                "text-[#1c252e]":
+                                                                                                    subCmt.id !==
+                                                                                                    showReplyBox.id,
+                                                                                                "text-green":
+                                                                                                    subCmt.id ===
+                                                                                                    showReplyBox.id,
+                                                                                            }
+                                                                                        )}
+                                                                                    >
+                                                                                        {showReplyBox.id ===
+                                                                                        subCmt.id ? (
+                                                                                            <svg
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                                aria-hidden="true"
+                                                                                                role="img"
+                                                                                                className="w-4 h-4"
+                                                                                                viewBox="0 0 24 24"
+                                                                                            >
+                                                                                                <path
+                                                                                                    fill="#00a76f"
+                                                                                                    d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
+                                                                                                ></path>
+                                                                                            </svg>
+                                                                                        ) : (
+                                                                                            <svg
+                                                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                                                aria-hidden="true"
+                                                                                                role="img"
+                                                                                                className="w-4 h-4"
+                                                                                                viewBox="0 0 24 24"
+                                                                                            >
+                                                                                                <path
+                                                                                                    fill="#1c252e"
+                                                                                                    d="m11.4 18.161l7.396-7.396a10.3 10.3 0 0 1-3.326-2.234a10.3 10.3 0 0 1-2.235-3.327L5.839 12.6c-.577.577-.866.866-1.114 1.184a6.6 6.6 0 0 0-.749 1.211c-.173.364-.302.752-.56 1.526l-1.362 4.083a1.06 1.06 0 0 0 1.342 1.342l4.083-1.362c.775-.258 1.162-.387 1.526-.56q.647-.308 1.211-.749c.318-.248.607-.537 1.184-1.114m9.448-9.448a3.932 3.932 0 0 0-5.561-5.561l-.887.887l.038.111a8.75 8.75 0 0 0 2.092 3.32a8.75 8.75 0 0 0 3.431 2.13z"
+                                                                                                ></path>
+                                                                                            </svg>
+                                                                                        )}
+                                                                                        Reply
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
 
                                                                             <div>
-                                                                                {subCmt.replyToUserName !==
-                                                                                    subCmt.userName && (
-                                                                                    <span className="font-semibold pr-2 text-black">
-                                                                                        @
+                                                                                {editComment?.id ===
+                                                                                subCmt.id ? (
+                                                                                    <div className="relative my-1 rounded-lg items-center border-1 transition-all ease-linear focus-within:border-black border-gray-300 hover:border-black">
+                                                                                        <div className="p-2 flex flex-col ">
+                                                                                            <input
+                                                                                                value={
+                                                                                                    editComment?.content
+                                                                                                }
+                                                                                                autoFocus={
+                                                                                                    true
+                                                                                                }
+                                                                                                onChange={(
+                                                                                                    e
+                                                                                                ) => {
+                                                                                                    setEditComment(
+                                                                                                        (
+                                                                                                            prev
+                                                                                                        ) => ({
+                                                                                                            ...prev,
+                                                                                                            content:
+                                                                                                                e
+                                                                                                                    .target
+                                                                                                                    .value,
+                                                                                                        })
+                                                                                                    );
+                                                                                                }}
+                                                                                                className={clsx(
+                                                                                                    "outline-none text-[15px] w-full"
+                                                                                                )}
+                                                                                            />
+                                                                                            <div className="flex justify-end">
+                                                                                                <button
+                                                                                                    type="button"
+                                                                                                    onClick={
+                                                                                                        updateComment
+                                                                                                    }
+                                                                                                    className="relative bg-black rounded-lg text-white text-sm font-semibold px-2 py-1 mt-2 inline-block"
+                                                                                                >
+                                                                                                    <Ink></Ink>
+                                                                                                    Edit
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div>
+                                                                                        {subCmt.replyToUserName !==
+                                                                                            subCmt.userName && (
+                                                                                            <span className="font-semibold pr-2 text-black">
+                                                                                                @
+                                                                                                {
+                                                                                                    subCmt.replyToUserName
+                                                                                                }
+                                                                                            </span>
+                                                                                        )}
                                                                                         {
-                                                                                            subCmt.replyToUserName
+                                                                                            subCmt.content
                                                                                         }
-                                                                                    </span>
-                                                                                )}
-                                                                                {
-                                                                                    subCmt.content
-                                                                                }
 
-                                                                                .
+                                                                                        .
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                             <div className="text-gray-500 mt-1.5 mb-2 text-[13px] font-normal">
                                                                                 {
@@ -1012,7 +1305,6 @@ const ViewPost = ({ adminView = false }) => {
                                             >
                                                 <div className="w-9 h-full flex-1 absolute left-6 border-custom -translate-y-1/2"></div>
                                                 <InputComponent
-                                                    autoFocus={true}
                                                     value={subComment.content}
                                                     onHandleChange={(e) =>
                                                         setSubComment({
@@ -1045,9 +1337,9 @@ const ViewPost = ({ adminView = false }) => {
                                         </div>
                                     );
                                 })}
-                            {pagination.totalPage > 1 && (
+                            {totalPage.current > 1 && (
                                 <PaginationItem
-                                    count={pagination.totalPage}
+                                    count={totalPage.current}
                                     handleChange={handleChangePagination}
                                 ></PaginationItem>
                             )}

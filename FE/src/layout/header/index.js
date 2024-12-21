@@ -8,9 +8,6 @@ import clsx from "clsx";
 import Dropdown from "../../component/dropDown/index";
 import { useDispatch, useSelector } from "react-redux";
 import NotificationItem from "../../component/notificationItem";
-import useNotificationWebSocket from "../../component/notificationWebSocket";
-import * as authService from "../../api/apiService/authService";
-import notificationSlice from "../../redux/reducers/notificationSlice";
 import SearchBar from "../../component/search";
 
 export default function Header() {
@@ -19,34 +16,12 @@ export default function Header() {
     const [isAdmin, setIsAdmin] = React.useState(false);
 
     const { user } = useSelector((state) => state.login);
-    const dispatch = useDispatch();
 
     React.useEffect(() => {
         if (window.location.pathname === "/admin") {
             setIsAdmin(true);
         }
     }, []);
-
-    useNotificationWebSocket();
-
-    useEffect(() => {
-        if (!user) return;
-        const fetchApi = async () => {
-            try {
-                const result = await authService.getAllNotification(
-                    user.email,
-                    {
-                        page: 0,
-                        size: 5,
-                    }
-                );
-                dispatch(notificationSlice.actions.init(result));
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        fetchApi();
-    }, [user, dispatch]);
 
     const handleGoToSignUp = () => {
         if (window.location.pathname === "/sign-up") return;
@@ -143,11 +118,7 @@ export default function Header() {
                                     elementClick={
                                         <img
                                             className="border circle object-cover w-10 h-10 border-gray-200 cursor-pointer"
-                                            src={
-                                                user && user.avatar
-                                                    ? user.avatar
-                                                    : avatar
-                                            }
+                                            src={user?.avatarUrl || avatar}
                                             alt=""
                                         />
                                     }

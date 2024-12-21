@@ -1,5 +1,4 @@
 import React from "react";
-import { Checkbox } from "@nextui-org/react";
 import ReactPlayer from "react-player";
 import {
     Modal,
@@ -20,10 +19,11 @@ import * as instructorService from "../../../api/apiService/instructorService";
 import * as publicService from "../../../api/apiService/publicService";
 import { toast } from "sonner";
 import btnClose from "../../../assets/images/btnClose.svg";
-import ReactQuill from "react-quill";
+import ReactQuill from "react-quill-new";
 import { Switch } from "@nextui-org/react";
 import SelectComponent from "../../../component/select/SelectComponent";
 import Ink from "react-ink";
+import { useParams } from "react-router-dom";
 
 const initFormData = {
     title: "",
@@ -36,13 +36,16 @@ const initFormData = {
     status: "DRAFT",
 };
 
-function InstructorCreateCourse() {
+function InstructorCreateCourse({ isEdit = false }) {
     const [formData, setFormData] = useState(initFormData);
+
+    console.table(formData);
     const [options, setOptions] = useState([]);
     const [errors, setErrors] = useState({});
     const [isUploading, setIsUploading] = useState(false);
     const [priceTiers, setPriceTires] = useState([]);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const { id } = useParams();
 
     let timerId;
 
@@ -115,12 +118,11 @@ function InstructorCreateCourse() {
         toast.promise(publicService.uploadFile(e.target.files[0]), {
             loading: "Loading video...",
             success: (result) => {
-                setIsUploading((prev) => false);
-                // https://res.cloudinary.com/dhydbv51p/video/upload/v1729619451/dream_chasers_v2/t0ygpbqaddd0waiblgnd.mp4
-                console.log(result.content);
                 setFormData((prev) => {
                     return { ...prev, video: result.content };
                 });
+                setIsUploading(false);
+
                 return "Upload video successfully";
             },
             error: (error) => {
@@ -208,16 +210,6 @@ function InstructorCreateCourse() {
         });
     };
 
-    const debounce = (func, delay = 600) => {
-        return () => {
-            clearTimeout(timerId);
-
-            timerId = setTimeout(() => {
-                func();
-            }, delay);
-        };
-    };
-
     const handleCreateSection = () => {
         const newSection = {
             title: "",
@@ -238,7 +230,7 @@ function InstructorCreateCourse() {
         if (!formData.title) errors.title = "Course Name is required.";
         if (!formData.description)
             errors.description = "Description is required.";
-        if (!formData.price) errors.price = "Price is required.";
+        if (formData.price === "") errors.price = "Price is required.";
         // if (!formData.thumbnail) errors.thumbnail = "Thumbnail is required.";
         if (formData.categories.length === 0)
             errors.categories = "At least one category is required.";
@@ -269,6 +261,31 @@ function InstructorCreateCourse() {
         return errors;
     };
 
+    const handleUpdateCourse = () => {
+        toast.promise(instructorService.updateCourse(id, formData), {
+            loading: "Loading...",
+            success: () => {
+                return "Update course successfully";
+            },
+            error: (error) => {
+                return error.message;
+            },
+        });
+    };
+
+    const handleCreateCourse = () => {
+        toast.promise(instructorService.createCourse(formData), {
+            loading: "Loading...",
+            success: () => {
+                setFormData(initFormData);
+                return "Create successfully";
+            },
+            error: (error) => {
+                return error.message;
+            },
+        });
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isUploading)
@@ -281,25 +298,25 @@ function InstructorCreateCourse() {
             return;
         }
 
-        const featchApi = async () => {
-            toast.promise(instructorService.createCourse(formData), {
-                loading: "Loading...",
-                success: () => {
-                    setFormData(initFormData);
-                    return "Create successfully";
-                },
-                error: (error) => {
-                    return error.message;
-                },
-            });
-        };
-
-        const debounceApi = debounce(featchApi);
-        debounceApi();
+        if (isEdit) {
+            handleUpdateCourse();
+        } else {
+            handleCreateCourse();
+        }
     };
+
     useEffect(() => {
         const fetchApi = async () => {
             try {
+                if (id) {
+                    const result = await instructorService.getCourseById(id);
+                    var ctes = result.categories.map((c) => ({
+                        label: c,
+                        value: c,
+                    }));
+
+                    setFormData({ ...result, categories: ctes });
+                }
                 const result = await publicService.getAllCategoriesAndPrice(
                     false,
                     0,
@@ -326,10 +343,11 @@ function InstructorCreateCourse() {
             }
         };
         fetchApi();
-    }, []);
+    }, [id]);
 
     const updateDuration = (e, lesson, sectionIndex) => {
         var sectionUpdate = { ...formData.sections[sectionIndex] };
+        console.log("duration. " + e);
         sectionUpdate.lessons = sectionUpdate.lessons.map((l) => {
             if (l.title === lesson.title) {
                 return { ...l, duration: e };
@@ -348,8 +366,9 @@ function InstructorCreateCourse() {
             <div className="container flex flex-col justify-center">
                 <div className="w-3/4 mx-auto">
                     <div>
-                        <h3 className="titleMainDash">Create a new course</h3>
-
+                        <h3 className="titleMainDash">
+                            {isEdit ? "Edit course" : "Create a new course"}
+                        </h3>
                         <div
                             className={clsx(
                                 styles.formGroup,
@@ -430,14 +449,6 @@ function InstructorCreateCourse() {
                                         maxValues={3}
                                     />
 
-                                    {/* <label
-                                        className={clsx(
-                                            styles.formLabel,
-                                            "text-black"
-                                        )}
-                                    >
-                                        Category
-                                    </label> */}
                                     {errors.categories && (
                                         <div className="text-red-500 mt-1 text-sm ml-1">
                                             {errors.categories}
@@ -449,7 +460,7 @@ function InstructorCreateCourse() {
                                 >
                                     <div className="input-h">
                                         <SelectComponent
-                                            value={formData.price}
+                                            value={formData?.price.toString()}
                                             data={priceTiers}
                                             handleChange={(e) => {
                                                 setFormData((prev) => ({
@@ -935,7 +946,7 @@ function InstructorCreateCourse() {
 
                     <div className="flex mt-3 mb-6 justify-end items-center gap-3">
                         <div className="center gap-0 font-medium bg-white rounded-lg px-3">
-                            <div onPress={onOpen}>
+                            <div x>
                                 By creating a course on our platform, you agree
                                 to the following
                             </div>
@@ -1354,21 +1365,42 @@ function InstructorCreateCourse() {
                             </Modal>
                         </div>
                         <div className="flex items-center">
-                            <Switch
-                                aria-label="Puslish"
-                                color="success"
-                                className="mr-1"
-                                size="sm"
-                                onChange={(e) => {
-                                    let status = e.target.checked
-                                        ? "PUBLISHED"
-                                        : "DRAFT";
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        status: status,
-                                    }));
-                                }}
-                            />
+                            {formData.status === "PUBLISHED" ? (
+                                <>
+                                    <Switch
+                                        aria-label="Publish"
+                                        color="success"
+                                        className="mr-1"
+                                        size="sm"
+                                        defaultSelected
+                                        onChange={(e) => {
+                                            let status = e.target.checked
+                                                ? "PUBLISHED"
+                                                : "DRAFT";
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                status: status,
+                                            }));
+                                        }}
+                                    />
+                                </>
+                            ) : (
+                                <Switch
+                                    aria-label="Publish"
+                                    color="success"
+                                    className="mr-1"
+                                    size="sm"
+                                    onChange={(e) => {
+                                        let status = e.target.checked
+                                            ? "PUBLISHED"
+                                            : "DRAFT";
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            status: status,
+                                        }));
+                                    }}
+                                />
+                            )}
                             <div>Publish</div>
                         </div>
 
@@ -1378,7 +1410,7 @@ function InstructorCreateCourse() {
                             onClick={handleSubmit}
                         >
                             <Ink></Ink>
-                            Create Course
+                            {isEdit ? "Save Changes" : "Create"}
                         </button>
                     </div>
                 </div>

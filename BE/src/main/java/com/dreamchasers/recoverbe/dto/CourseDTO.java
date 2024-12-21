@@ -20,6 +20,9 @@ public class CourseDTO {
     private int totalDuration;
     private int isEditedCategories;
     private int isEdited;
+    private int totalRegister;
+    private int totalRating;
+    private double scoreRating;
     private UserBasicDTO author;
     private String title;
     private String tier;

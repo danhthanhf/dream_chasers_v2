@@ -35,13 +35,7 @@ function MyPostList({ page = "MY_POST", children }) {
         };
 
         fetchApi();
-    }, [
-        pagination.page,
-        optionShow.deleted,
-        optionShow.status,
-        pagination.size,
-        pagination,
-    ]);
+    }, [optionShow, pagination]);
 
     return (
         <div>
@@ -58,12 +52,19 @@ function MyPostList({ page = "MY_POST", children }) {
                         {page === "MY_POST" && (
                             <div className="flex">
                                 <div
-                                    onClick={() => setIsDeleted(false)}
+                                    onClick={() =>
+                                        setOptionShow((prev) => ({
+                                            ...prev,
+                                            deleted: false,
+                                        }))
+                                    }
                                     className={clsx(
-                                        "bg-white relative cursor-pointer rounded-none transition-all delay-100 ease-in min-w-52 font-semibold text-base py-3 h-full px-3 text-gray-500",
+                                        "bg-white relative cursor-pointer rounded-none min-w-52 transition-all delay-100 ease-in font-semibold text-base py-3 h-full px-3 text-gray-500 border-b-2",
                                         {
-                                            "text-black border-b-black border-b-2":
-                                                !isDeleted,
+                                            "text-black border-b-black":
+                                                !optionShow.deleted,
+                                            "border-b-transparent":
+                                                optionShow.deleted,
                                         }
                                     )}
                                 >
@@ -71,12 +72,19 @@ function MyPostList({ page = "MY_POST", children }) {
                                     Published
                                 </div>
                                 <div
-                                    onClick={() => setIsDeleted(true)}
+                                    onClick={() =>
+                                        setOptionShow((prev) => ({
+                                            ...prev,
+                                            deleted: true,
+                                        }))
+                                    }
                                     className={clsx(
-                                        "bg-white relative cursor-pointer rounded-none min-w-52 transition-all delay-100 ease-in font-semibold text-base py-3 h-full px-3 text-gray-500",
+                                        "bg-white relative cursor-pointer rounded-none min-w-52 transition-all delay-100 ease-in font-semibold text-base py-3 h-full px-3 text-gray-500 border-b-2 ",
                                         {
-                                            "text-black border-b-black border-b-2":
-                                                isDeleted,
+                                            "text-black border-b-black":
+                                                optionShow.deleted,
+                                            "border-b-transparent":
+                                                !optionShow.deleted,
                                         }
                                     )}
                                 >

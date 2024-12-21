@@ -2,21 +2,30 @@ import styles from "./NotificationItem.module.scss";
 import clsx from "clsx";
 import { Popover, Transition } from "@headlessui/react";
 import noDataImg from "../../assets/images/ic_noData.svg";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import avatar from "../../assets/images/avatar_25.jpg";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import * as userService from "../../api/apiService/authService";
+import * as notificationService from "../../api/apiService/notificationService";
 import notificationSlice from "../../redux/reducers/notificationSlice";
 import { getTimeElapsed } from "../../util/index";
 import Ink from "react-ink";
+import { notificationSelector, userSelector } from "../../redux/selector";
+import websocketService from "../../service/WebsocketService";
+import { toast } from "sonner";
 
 export default function NotificationItem({ iconBtn }) {
-    const user = useSelector((state) => state.login.user);
+    const user = useSelector(userSelector);
     const [type, setType] = useState("ALL");
-
-    const notification = useSelector((state) => state.notification);
-    const [totalUnRead, setTotalUnRead] = useState(0);
+    const isFirstRender = useRef(true);
+    // const notificationInit = useState(useSelector(notificationSelector));
+    const [notification, setNoti] = useState({});
+    // {
+    //     notifications: [],
+    //     totalECurrentlements: 0,
+    //      totalAllElement: 0,
+    //     totalUnread: 0,
+    // }
     const [pagination, setPagination] = useState({
         page: 0,
         size: 5,
@@ -25,23 +34,109 @@ export default function NotificationItem({ iconBtn }) {
     const dispatch = useDispatch();
     const [render, setRender] = useState(false);
 
-    const handleRead = (notification) => {
-        if (notification.read) {
-            return;
-        }
+    useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await userService.readNotification(
-                    user.email,
-                    notification.id
+                const res = await notificationService.getAllNotification(
+                    type,
+                    pagination
                 );
-                dispatch(notificationSlice.actions.update(result.content));
+                setNoti(res);
+                dispatch(notificationSlice.actions.init(res));
             } catch (error) {
                 console.log(error);
             }
         };
         fetchApi();
-        var path = getPath(notification.type, notification.title);
+        handleSubscribe();
+        return () => {
+            if (user) {
+                websocketService.unsubscribe(
+                    `/user/${user.email}/notification`
+                );
+            }
+        };
+    }, [pagination, type]);
+
+    const handleSubscribe = () => {
+        if (user && isFirstRender.current) {
+            websocketService.subscribe(
+                `/user/${user.email}/notification`,
+                (message) => {
+                    const data = JSON.parse(message.body);
+                    toast.info("You have a new notification");
+                    addNewNoti(data);
+                }
+            );
+        }
+    };
+
+    const addNewNoti = (data) => {
+        setNoti((prevNoti) => {
+            // Cập nhật tổng số thông báo chưa đọc
+            if (data.read === false) {
+                prevNoti.totalUnread++;
+            }
+
+            // Cập nhật tổng số tất cả các phần tử
+            prevNoti.totalAllElements++;
+
+            // Thêm thông báo mới vào danh sách
+            return {
+                ...prevNoti,
+                notifications: [data, ...prevNoti.notifications],
+                totalUnread: prevNoti.totalUnread,
+                totalAllElements: prevNoti.totalAllElements,
+            };
+        });
+    };
+
+    const updateUIAfterReadNotification = (notification) => {
+        setNoti((prevNoti) => {
+            let updatedNotifications = prevNoti.notifications.map((noti) => {
+                if (noti.id === notification.id) {
+                    return {
+                        ...noti,
+                        read: true,
+                        createdAt: notification.createdAt,
+                    };
+                }
+                return noti;
+            });
+
+            if (type === "UNREAD") {
+                // remove read notification from list unread
+                updatedNotifications = updatedNotifications.filter(
+                    (noti) => !noti.read
+                );
+            }
+            const newTotalUnread =
+                prevNoti.totalUnread > 0 ? prevNoti.totalUnread - 1 : 0;
+
+            return {
+                ...prevNoti,
+                notifications: updatedNotifications,
+                totalUnread: newTotalUnread,
+            };
+        });
+    };
+
+    const handleRead = (notification) => {
+        const fetchApi = async () => {
+            try {
+                const result = await notificationService.readNotification(
+                    notification.id
+                );
+                updateUIAfterReadNotification(result.content);
+                // dispatch(notificationSlice.actions.update(result.content));
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        if (!notification.read) {
+            fetchApi();
+        }
+        var path = getPath(notification);
         navigate(path);
     };
 
@@ -52,7 +147,7 @@ export default function NotificationItem({ iconBtn }) {
 
         const fetchApi = async () => {
             try {
-                await userService.readAllNotifications(user.email);
+                await notificationService.readAllNotifications();
                 dispatch(notificationSlice.actions.readAll());
             } catch (error) {
                 console.log(error);
@@ -62,11 +157,19 @@ export default function NotificationItem({ iconBtn }) {
     };
 
     const handleRemoveAllNotification = () => {
+        if (notification.totalAllElements === 0) {
+            return;
+        }
         const fetchApi = async () => {
             try {
-                await userService.removeAllNotifications(user.email);
+                await notificationService.removeAllNotifications();
 
-                dispatch(notificationSlice.actions.removeAll());
+                setNoti({
+                    notifications: [],
+                    totalCurrentElements: 0,
+                    totalUnread: 0,
+                    totalAllElements: 0,
+                });
             } catch (error) {
                 console.log(error);
             }
@@ -76,57 +179,37 @@ export default function NotificationItem({ iconBtn }) {
 
     const handleChangeType = (type) => {
         setType(type);
-        var fetchApi;
-        if (type.toLowerCase() === "unread") {
-            fetchApi = async () => {
-                try {
-                    const result = await userService.getAllUnread(
-                        user.email,
-                        pagination
-                    );
-                    dispatch(
-                        notificationSlice.actions.init({
-                            ...notification,
-                            notifications: [...result.content],
-                        })
-                    );
-                } catch (error) {
-                    console.log(error);
-                }
-            };
-        } else if (type.toLowerCase() === "all") {
-            fetchApi = async () => {
-                try {
-                    const result = await userService.getAllNotification(
-                        user.email,
-                        pagination
-                    );
-                    dispatch(
-                        notificationSlice.actions.init({
-                            ...notification,
-                            notifications: [...result.notifications],
-                        })
-                    );
-                } catch (error) {
-                    console.log(error);
-                }
-            };
-        }
-        fetchApi();
     };
 
-    const getPath = (type, title, referenceId) => {
-        type = type.toLowerCase();
-        if (type.includes("post")) {
-            return "/posts/" + title;
-        } else if (type.includes("course")) {
-            return "course/overview/" + encodeURIComponent(title);
-        } else if (type.includes("comment")) {
-            return referenceId
-                ? "/posts/" + title + "?watch=" + referenceId
-                : "/posts/" + title;
+    const getPath = (noti) => {
+        let type = noti.referenceType?.toLowerCase();
+        switch (type) {
+            case "post":
+                return (
+                    "/posts/" + noti.postTitle + "?commentId=" + noti.commentId
+                );
+            case "course":
+                let url = "/course/" + noti.courseId;
+
+                // Kiểm tra nếu có lessonId thì thêm vào URL
+                if (noti.lessonId) {
+                    url += "?lessonId=" + noti.lessonId;
+                }
+                // Kiểm tra nếu có commentId thì thêm vào URL
+                if (noti.commentId) {
+                    // Nếu có lessonId, thì thêm commentId bằng dấu "&", nếu không, bắt đầu với "?"
+                    url +=
+                        (noti.lessonId ? "&" : "?") +
+                        "commentId=" +
+                        noti.commentId;
+                }
+                return url;
+            case "add_friend":
+                return "/profile/" + noti.fromUser;
+                defautl: return "/";
         }
     };
+
     return (
         <div className="w-full max-w-sm px-1">
             <Popover className="relative">
@@ -204,9 +287,8 @@ export default function NotificationItem({ iconBtn }) {
                                                 >
                                                     All
                                                     <div className="boxReaded">
-                                                        {
-                                                            notification.totalElements
-                                                        }
+                                                        {notification.totalAllElements ||
+                                                            0}
                                                     </div>
                                                 </div>
                                                 <div
@@ -226,9 +308,8 @@ export default function NotificationItem({ iconBtn }) {
                                                 >
                                                     Unread
                                                     <div className="boxNew">
-                                                        {
-                                                            notification.totalUnread
-                                                        }
+                                                        {notification.totalUnread ||
+                                                            0}
                                                     </div>
                                                 </div>
                                             </div>
@@ -250,20 +331,12 @@ export default function NotificationItem({ iconBtn }) {
                                                 "max-sm:h-16"
                                             )}
                                         >
-                                            {notification.notifications &&
-                                            notification.notifications.length >
-                                                0 ? (
+                                            {notification.notifications
+                                                ?.length > 0 ? (
                                                 notification.notifications.map(
                                                     (noti, ind) => {
                                                         return (
-                                                            <Link
-                                                                to={
-                                                                    "/" +
-                                                                    getPath(
-                                                                        noti.type,
-                                                                        noti.title
-                                                                    )
-                                                                }
+                                                            <div
                                                                 key={ind}
                                                                 onClick={() =>
                                                                     handleRead(
@@ -280,11 +353,6 @@ export default function NotificationItem({ iconBtn }) {
                                                                                 !noti.read,
                                                                         }
                                                                     )}
-                                                                    onClick={() =>
-                                                                        handleRead(
-                                                                            noti
-                                                                        )
-                                                                    }
                                                                 >
                                                                     <span
                                                                         className={clsx(
@@ -296,10 +364,19 @@ export default function NotificationItem({ iconBtn }) {
                                                                                     ) ||
                                                                                     noti.type.includes(
                                                                                         "PUBLISHED"
+                                                                                    ) ||
+                                                                                    noti.type.includes(
+                                                                                        "NEW"
+                                                                                    ) ||
+                                                                                    noti.type.includes(
+                                                                                        "ADD"
                                                                                     ),
                                                                                 tagPending:
                                                                                     noti.type.includes(
                                                                                         "PENDING"
+                                                                                    ) ||
+                                                                                    noti.type.includes(
+                                                                                        "REPLY"
                                                                                     ),
                                                                                 tagRejected:
                                                                                     noti.type.includes(
@@ -360,12 +437,12 @@ export default function NotificationItem({ iconBtn }) {
                                                                     </div>
                                                                 </div>
                                                                 <hr className="cssHr" />
-                                                            </Link>
+                                                            </div>
                                                         );
                                                     }
                                                 )
                                             ) : (
-                                                <div className="flex flex-col items-center">
+                                                <div className="flex flex-col items-center py-4">
                                                     <div>
                                                         <img
                                                             src={noDataImg}
@@ -379,6 +456,23 @@ export default function NotificationItem({ iconBtn }) {
                                             )}
                                         </div>
                                     </div>
+                                    {notification.totalCurrentElements >
+                                        notification.notifications?.length && (
+                                        <div
+                                            onClick={() =>
+                                                setPagination((prev) => ({
+                                                    ...prev,
+                                                    size: (pagination.size +=
+                                                        pagination.size),
+                                                }))
+                                            }
+                                            className="w-full py-2 center"
+                                        >
+                                            <span className="relative hover:opacity-80 cursor-pointer hover:underline font-semibold px-4 py-1 rounded-md">
+                                                Show more notifications
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </Popover.Panel>
                         </Transition>

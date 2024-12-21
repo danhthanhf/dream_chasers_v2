@@ -19,7 +19,7 @@ import { toast } from "sonner";
 export const CourseCard = memo(({ course }) => {
     const user = useSelector(userSelector);
     const navigate = useNavigate();
-    const price = course.price.toLocaleString("vi-VN", {
+    const price = course?.price?.toLocaleString("vi-VN", {
         style: "currency",
         currency: "VND",
     });
@@ -30,16 +30,14 @@ export const CourseCard = memo(({ course }) => {
         } else {
             try {
                 const res = await userService.checkEnrollmentAndRetrieveCourse(
-                    course?.title
+                    course?.id
                 );
                 if (res.enrolled) {
-                    navigate(
-                        `/course/${utils.formatStringInUrl(course?.title)}`
-                    );
+                    navigate(`/course/${utils.formatStringInUrl(course?.id)}`);
                 } else {
                     navigate(
                         `/course/overview/${utils.formatStringInUrl(
-                            course?.title
+                            course?.id
                         )}`
                     );
                 }
@@ -76,7 +74,10 @@ export const CourseCard = memo(({ course }) => {
                                     clipRule="evenodd"
                                 ></path>
                             </svg>
-                            {course && course.totalDuration}
+                            {course &&
+                                utils.convertSecondsToTime(
+                                    course.totalDuration
+                                )}
                         </div>
                         <div className="flex gap-1.5 px-2 py-1 rounded-md bg-[#edeff1]">
                             <svg
@@ -140,7 +141,7 @@ const CoursesComponent = () => {
     useEffect(() => {
         const fetchApi = async () => {
             try {
-                const result = await publicService.getAllCourse(0, 10);
+                const result = await publicService.getAllCourse(0, 99);
                 setCourses(result.content);
             } catch (error) {
                 console.log(error);

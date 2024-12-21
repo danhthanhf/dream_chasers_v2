@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/private/course")
+@RequestMapping("/api/v1/private/courses")
 public class CourseController {
     private final CourseService courseService;
 
@@ -32,6 +32,12 @@ public class CourseController {
     public ResponseEntity<ResponseObject> getAllDeleted(@RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "5") int size) {
         var result = courseService.getAllCourse(true, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ResponseObject> getCourseById(@PathVariable UUID id) {
+        var result = courseService.getCourseById(id);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
@@ -59,7 +65,7 @@ public class CourseController {
 
     @PutMapping("/{courseId}/status")
     public ResponseEntity<ResponseObject> changeCourseStatus(@PathVariable UUID courseId, @RequestBody StatusChangeDTO statusChangeDTO) {
-        ResponseObject result = courseService.changeCourseStatus(courseId, statusChangeDTO);
+        ResponseObject result = courseService.adminUpdateCourseStatus(courseId, statusChangeDTO);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 

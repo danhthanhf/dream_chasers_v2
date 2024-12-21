@@ -19,17 +19,6 @@ export const changeStatusPost = async (postId, status) => {
     }
 };
 
-export const getAllUnread = async (email, pagination) => {
-    try {
-        const result = await userInstance.get(
-            `/notification/${email}/getAllUnread?page=${pagination.page}&size=${pagination.size}`
-        );
-        return result.content;
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
 export const toggleLikePost = async (postId, email) => {
     try {
         return await userInstance.put(`/${email}/post/like/${postId}`);
@@ -307,9 +296,10 @@ export const logout = async () => {
     }
 };
 
-export const getUserByEmail = async (email) => {
+export const getUserByEmail = async () => {
     try {
-        return userInstance.get(`${email}`);
+        const res = await userInstance.get("/profile");
+        return res.content;
     } catch (error) {
         Promise.reject(error);
     }
@@ -359,52 +349,6 @@ export const updateLessonIds = async (alias, courseId, lessonIds) => {
     }
 };
 
-export const getAllNotification = async (email, pagination) => {
-    try {
-        const result = await userInstance.get(
-            `notification/${encodeURIComponent(email)}/getAll?page=${
-                pagination.page
-            }&size=${pagination.size}`
-        );
-        return result.content;
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
-export const readNotification = async (email, id) => {
-    if (email.includes("@")) {
-        email = email.substring(0, email.lastIndexOf("@"));
-    }
-    try {
-        return await userInstance.put(`notification/${email}/read/${id}`);
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
-export const readAllNotifications = async (email) => {
-    if (email.includes("@")) {
-        email = email.substring(0, email.lastIndexOf("@"));
-    }
-    try {
-        return await userInstance.put(`notification/${email}/readAll`);
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
-export const removeAllNotifications = async (email) => {
-    try {
-        return await userInstance.delete(
-            `notification/${encodeURIComponent(email)}/removeAll`
-        );
-    } catch (error) {
-        return Promise.reject(error);
-    }
-};
-
-
 export const getListCourse = async (email) => {
     try {
         return await userInstance.get(`/course/getAll/${email}`);
@@ -415,9 +359,7 @@ export const getListCourse = async (email) => {
 
 export const removeCommentById = async (email, cmtId) => {
     try {
-        return await userInstance.delete(
-            `/${encodeURIComponent(email)}/comment/delete/${cmtId}`
-        );
+        return await userInstance.delete(`/comments/${cmtId}`);
     } catch (error) {
         return Promise.reject(error);
     }

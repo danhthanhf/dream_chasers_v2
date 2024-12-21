@@ -1,5 +1,14 @@
 import { instructorInstance } from "../instance";
 
+export const getCourseById = async (id) => {
+    try {
+        const res = await instructorInstance.get(`/courses/${id}`);
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const getAvailableCourseByNameAndCategory = async (
     title,
     categoryId = 0,
@@ -9,7 +18,7 @@ export const getAvailableCourseByNameAndCategory = async (
 ) => {
     try {
         const result = await instructorInstance.get(
-            `/course/available?title=${encodeURIComponent(
+            `/courses/available?title=${encodeURIComponent(
                 title
             )}&categoryId=${categoryId}&isDeleted=${isDeleted}&page=${page}&selected=${selected}`
         );
@@ -21,7 +30,7 @@ export const getAvailableCourseByNameAndCategory = async (
 
 export const restoreListCourse = async (ids) => {
     try {
-        return await instructorInstance.delete(`/course/restore/list`, {
+        return await instructorInstance.delete(`/courses/restore/list`, {
             params: { ids: ids.join(", ") },
         });
     } catch (error) {
@@ -32,7 +41,7 @@ export const restoreListCourse = async (ids) => {
 export const restoreCourseById = async (id, page = 0, selected = 5) => {
     try {
         const result = await instructorInstance.delete(
-            `/course/restore/${id}?page=${page}&size=${selected}`
+            `/courses/restore/${id}?page=${page}&size=${selected}`
         );
         return result.content;
     } catch (error) {
@@ -42,7 +51,7 @@ export const restoreCourseById = async (id, page = 0, selected = 5) => {
 export const softDeleteListCourse = async (ids) => {
     console.log("🚀 ~ softDeleteListCourse ~ ids:", ids);
     try {
-        return await instructorInstance.delete(`/course/delete/soft/list`, {
+        return await instructorInstance.delete(`/courses/delete/soft/list`, {
             params: {
                 ids: ids.join(", "),
             },
@@ -55,7 +64,7 @@ export const softDeleteListCourse = async (ids) => {
 export const softDeleteCourse = async (id, page = 0, selected = 5) => {
     try {
         const result = await instructorInstance.delete(
-            `/course/delete/soft/${id}?page=${page}&size=${selected}`
+            `/courses/delete/soft/${id}?page=${page}&size=${selected}`
         );
         return result.content;
     } catch (error) {
@@ -66,7 +75,7 @@ export const softDeleteCourse = async (id, page = 0, selected = 5) => {
 export const processStatusCourse = async (id, status) => {
     try {
         const result = await instructorInstance.put(
-            `/course/${id}/status`,
+            `/courses/${id}/status`,
             status,
             {
                 headers: {
@@ -80,14 +89,22 @@ export const processStatusCourse = async (id, status) => {
     }
 };
 
+export const updateCourse = async (id, course) => {
+    try {
+        let categories = course.categories.map((cate) => cate.label);
+        course.categories = categories;
+        const response = await instructorInstance.put(`/courses/${id}`, course);
+        return response.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const createCourse = async (course) => {
     try {
         let categories = course.categories.map((cate) => cate.label);
         course.categories = categories;
-        const response = await instructorInstance.post(
-            "/course/create",
-            course
-        );
+        const response = await instructorInstance.post("/courses", course);
         return response;
     } catch (error) {
         return Promise.reject(error);
@@ -102,7 +119,7 @@ export const getListCourseDraftOrPublishedAndAvailableAndCategory = async (
 ) => {
     try {
         const result = await instructorInstance.get(
-            `/course/available/getAll?status=${status}&categoryId=${categoryId}&page=${page}&size=${size}`
+            `/courses/available/getAll?status=${status}&categoryId=${categoryId}&page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {
@@ -119,7 +136,7 @@ export const getCoursesByCategoryAndStatus = async (
 ) => {
     try {
         const result = await instructorInstance.get(
-            `/course/category?status=${status}&categoryId=${categoryId}&deleted=${deleted}&page=${page}&size=${size}`
+            `/courses/category?status=${status}&categoryId=${categoryId}&deleted=${deleted}&page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {
@@ -136,7 +153,7 @@ export const getCoursesDeletedByCategory = async (
 ) => {
     try {
         const result = await instructorInstance.get(
-            `/course/category?id=${id}&page=${page}&size=${size}`
+            `/courses/category?id=${id}&page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {
@@ -148,7 +165,7 @@ export const getCoursesDeletedByCategory = async (
 export const getAllCourse = async (page = 0, size = 5) => {
     try {
         const result = await instructorInstance.get(
-            `/course/getAll?page=${page}&size=${size}`
+            `/courses/getAll?page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {

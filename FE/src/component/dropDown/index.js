@@ -1,22 +1,45 @@
 import { Menu, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import styles from "./Menu.module.scss";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import avatarDefault from "../../assets/images/avatar_25.jpg";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Link, useNavigate } from "react-router-dom";
-import * as authApi from "../../api/apiService/authService";
+import * as authService from "../../api/apiService/authService";
 import { useDispatch, useSelector } from "react-redux";
 import loginSlice from "../../redux/reducers/loginSlice";
+import { registerInstructor } from "../../api/apiService/userService";
+import Modal from "../modal";
+import { toast } from "sonner";
 
 function Dropdown({ elementClick, ...props }) {
     const dispatch = useDispatch();
     const user = useSelector((state) => state.login.user);
     const navigate = useNavigate();
+    const handleSendRequest = () => {
+        setModalContent({ ...modalContent, isOpen: false });
+        toast.promise(registerInstructor, {
+            loading: "Sending...",
+            success: "Request has been sent",
+            error: "Error when sending request",
+        });
+    };
+
+    const [modalContent, setModalContent] = useState({
+        title: "Resgister become a instructor",
+        // description: "Are you sure want to become a instructor?",
+        isReject: false,
+        handleRemove: handleSendRequest,
+        isOpen: false,
+        handleCloseModal: () => {
+            setModalContent({ ...modalContent, isOpen: false });
+        },
+    });
+
     const handleLogout = () => {
         const fetchApi = async () => {
             try {
-                await authApi.logout();
+                await authService.logout();
                 dispatch(loginSlice.actions.setLogout());
                 navigate("/");
             } catch (error) {
@@ -24,6 +47,10 @@ function Dropdown({ elementClick, ...props }) {
             }
         };
         fetchApi();
+    };
+
+    const handleRegisterInstructor = () => {
+        setModalContent((prev) => ({ ...prev, isOpen: true }));
     };
 
     return (
@@ -52,21 +79,17 @@ function Dropdown({ elementClick, ...props }) {
                     <Menu.Items
                         className={clsx(
                             styles.itemClick,
-                            "absolute ivide-y divide-gray-100 rounded-md bg-custom-1 shadow-lg ring-1 ring-black/5 focus:outline-none max-sm:-right-1/2 max-sm:absolute max-lg:-r-20 md:-right-2 "
+                            "absolute ivide-y divide-gray-100 rounded-md bg-custom-1 shadow-lg ring-1 ring-black/5 focus:outline-none max-sm:-right-1/2 max-sm:absolute max-lg:-r-20 md:-right-2  min-w-[200px]"
                         )}
                     >
-                        <div className="px-4 py-1 w-max">
+                        <div className="px-2 py-1 w-max">
                             <div
                                 className={`text-gray-900 group flex w-full items-center rounded-md py-2.5 text-sm`}
                             >
                                 <div>
                                     <img
                                         className={clsx(styles.avatar)}
-                                        src={
-                                            user && user.avatar
-                                                ? user.avatar
-                                                : avatarDefault
-                                        }
+                                        src={user.avatarUrl || avatarDefault}
                                         alt=""
                                     />
                                 </div>
@@ -183,11 +206,7 @@ function Dropdown({ elementClick, ...props }) {
                                     )}
                                 </Menu.Item>
                             </Link>
-                        </div>
-
-                        <div className="h-px bg-gray-200" />
-                        <div className="px-1 py-1">
-                            <Link to={"/instructor-dashboard"}>
+                            <Link to={`/message/`}>
                                 <Menu.Item>
                                     {({ active }) => (
                                         <button
@@ -208,8 +227,8 @@ function Dropdown({ elementClick, ...props }) {
                                                 >
                                                     <path
                                                         strokeLinecap="round"
-                                                        stroklinejoin="round"
-                                                        d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                        strokeLinejoin="round"
+                                                        d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
                                                     />
                                                 </svg>
                                             ) : (
@@ -223,16 +242,117 @@ function Dropdown({ elementClick, ...props }) {
                                                 >
                                                     <path
                                                         strokeLinecap="round"
-                                                        stroklinejoin="round"
-                                                        d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                        strokeLinejoin="round"
+                                                        d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 0 1 .778-.332 48.294 48.294 0 0 0 5.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
                                                     />
                                                 </svg>
                                             )}
-                                            Instructor Dashboard
+                                            Messages
                                         </button>
                                     )}
                                 </Menu.Item>
                             </Link>
+                        </div>
+
+                        <div className="h-px bg-gray-200" />
+                        <div className="px-1 py-1">
+                            {
+                                <Link to={"/instructor-dashboard"}>
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                className={`${
+                                                    active
+                                                        ? "bg-black text-white"
+                                                        : "text-gray-900"
+                                                } group flex w-full items-center rounded-md px-2 py-2.5 text-sm`}
+                                            >
+                                                {active ? (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth="1.5"
+                                                        stroke="currentColor"
+                                                        className="mr-2 w-6 h-6"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            stroklinejoin="round"
+                                                            d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                        />
+                                                    </svg>
+                                                ) : (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth="1.5"
+                                                        stroke="currentColor"
+                                                        className="mr-2 w-6 h-6"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            stroklinejoin="round"
+                                                            d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z"
+                                                        />
+                                                    </svg>
+                                                )}
+                                                Instructor Dashboard
+                                            </button>
+                                        )}
+                                    </Menu.Item>
+                                </Link>
+                                // :
+                                /*   (
+                                <div onClick={handleRegisterInstructor}>
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <button
+                                                className={`${
+                                                    active
+                                                        ? "bg-black text-white"
+                                                        : "text-gray-900"
+                                                } group flex w-full items-center rounded-md px-2 py-2.5 text-sm`}
+                                            >
+                                                {active ? (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth="1.5"
+                                                        stroke="currentColor"
+                                                        className="mr-2 w-6 h-6"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+                                                        />
+                                                    </svg>
+                                                ) : (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth="1.5"
+                                                        stroke="currentColor"
+                                                        className="mr-2 w-6 h-6"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+                                                        />
+                                                    </svg>
+                                                )}
+                                                Become a instructor
+                                            </button>
+                                        )}
+                                    </Menu.Item>
+                                </div>
+                            ) */
+                            }
                             <Link to={"/me/my-learning"}>
                                 <Menu.Item>
                                     {({ active }) => (
@@ -248,6 +368,7 @@ function Dropdown({ elementClick, ...props }) {
                                                     xmlns="http://www.w3.org/2000/svg"
                                                     viewBox="0 0 100 100"
                                                     className="mr-2 w-6 h-6"
+                                                    strokeWidth={2.0}
                                                     fill="#fff"
                                                 >
                                                     <path d="M88 10H12c-3.31 0-6 2.69-6 6v58c0 3.31 2.69 6 6 6h30.05l-.67 1.69A6.852 6.852 0 0 1 35 86h-4c-1.1 0-2 .9-2 2s.9 2 2 2h38c1.1 0 2-.9 2-2s-.9-2-2-2h-4c-2.82 0-5.32-1.69-6.37-4.31L57.95 80H88c3.31 0 6-2.69 6-6V16c0-3.31-2.69-6-6-6zm-78 6c0-1.1.9-2 2-2h76c1.1 0 2 .9 2 2v50H10V16zm44.91 67.17c.42 1.04.98 1.99 1.66 2.83H43.43c.68-.84 1.24-1.79 1.66-2.83L46.35 80h7.29l1.27 3.17zM90 74c0 1.1-.9 2-2 2H12c-1.1 0-2-.9-2-2v-4h80v4z"></path>
@@ -259,12 +380,9 @@ function Dropdown({ elementClick, ...props }) {
                                                     className="mr-2 w-6 h-6"
                                                     viewBox="0 0 100 100"
                                                     fill="black"
-                                                    strokeWidth={1.5}
+                                                    strokeWidth={2.0}
                                                 >
-                                                    <path
-                                                        strokeWidth={1.5}
-                                                        d="M88 10H12c-3.31 0-6 2.69-6 6v58c0 3.31 2.69 6 6 6h30.05l-.67 1.69A6.852 6.852 0 0 1 35 86h-4c-1.1 0-2 .9-2 2s.9 2 2 2h38c1.1 0 2-.9 2-2s-.9-2-2-2h-4c-2.82 0-5.32-1.69-6.37-4.31L57.95 80H88c3.31 0 6-2.69 6-6V16c0-3.31-2.69-6-6-6zm-78 6c0-1.1.9-2 2-2h76c1.1 0 2 .9 2 2v50H10V16zm44.91 67.17c.42 1.04.98 1.99 1.66 2.83H43.43c.68-.84 1.24-1.79 1.66-2.83L46.35 80h7.29l1.27 3.17zM90 74c0 1.1-.9 2-2 2H12c-1.1 0-2-.9-2-2v-4h80v4z"
-                                                    ></path>
+                                                    <path d="M88 10H12c-3.31 0-6 2.69-6 6v58c0 3.31 2.69 6 6 6h30.05l-.67 1.69A6.852 6.852 0 0 1 35 86h-4c-1.1 0-2 .9-2 2s.9 2 2 2h38c1.1 0 2-.9 2-2s-.9-2-2-2h-4c-2.82 0-5.32-1.69-6.37-4.31L57.95 80H88c3.31 0 6-2.69 6-6V16c0-3.31-2.69-6-6-6zm-78 6c0-1.1.9-2 2-2h76c1.1 0 2 .9 2 2v50H10V16zm44.91 67.17c.42 1.04.98 1.99 1.66 2.83H43.43c.68-.84 1.24-1.79 1.66-2.83L46.35 80h7.29l1.27 3.17zM90 74c0 1.1-.9 2-2 2H12c-1.1 0-2-.9-2-2v-4h80v4z"></path>
                                                     <path d="M76 20H54c-1.54 0-2.94.59-4 1.54A5.98 5.98 0 0 0 46 20H24c-1.1 0-2 .9-2 2v30c0 1.1.9 2 2 2h22c1.1 0 2 .9 2 2s.9 2 2 2 2-.9 2-2 .9-2 2-2h7v4c0 1.1.9 2 2 2s2-.9 2-2v-4h11c1.1 0 2-.9 2-2V22c0-1.1-.9-2-2-2zM48 50.34c-.63-.22-1.3-.34-2-.34H26V24h20c1.1 0 2 .9 2 2v24.34zM74 50H54c-.7 0-1.37.12-2 .34V26c0-1.1.9-2 2-2h20v26z"></path>
                                                 </svg>
                                             )}
@@ -290,7 +408,7 @@ function Dropdown({ elementClick, ...props }) {
                                             {active ? (
                                                 <svg
                                                     fill="none"
-                                                    strokeWidth="2.5"
+                                                    strokeWidth="1.5"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -306,7 +424,7 @@ function Dropdown({ elementClick, ...props }) {
                                             ) : (
                                                 <svg
                                                     fill="none"
-                                                    strokwidth="1.5"
+                                                    strokeWidth="1.5"
                                                     stroke="currentColor"
                                                     viewBox="0 0 24 24"
                                                     xmlns="http://www.w3.org/2000/svg"
@@ -366,12 +484,12 @@ function Dropdown({ elementClick, ...props }) {
                                                     />
                                                 </svg>
                                             )}
-                                            Pusblish Post
+                                            Write Post
                                         </button>
                                     )}
                                 </Menu.Item>
                             </Link>
-                            <Link to={"/me/bookmark/posts"}>
+                            {/* <Link to={"/me/bookmark/posts"}>
                                 <Menu.Item>
                                     {({ active }) => (
                                         <button
@@ -416,7 +534,7 @@ function Dropdown({ elementClick, ...props }) {
                                         </button>
                                     )}
                                 </Menu.Item>
-                            </Link>
+                            </Link> */}
                         </div>
 
                         <div className="h-px bg-gray-200" />
@@ -471,6 +589,35 @@ function Dropdown({ elementClick, ...props }) {
                     </Menu.Items>
                 </Transition>
             </Menu>
+            <Modal
+                isOpen={modalContent.isOpen}
+                closeModal={modalContent.handleCloseModal}
+                handleRemove={modalContent.handleRemove}
+                title={modalContent.title}
+                isReject={modalContent.isReject}
+                description={modalContent.description}
+            >
+                <div>
+                    You are requesting to become an instructor on our platform.
+                    Please review the details below before submitting your
+                    request
+                    <ul>
+                        <li>
+                            <strong>Benefit:</strong> Share your knowledge and
+                            earn income by creating courses.
+                        </li>
+                        <li>
+                            <strong>Requirement:</strong> Submit proof of
+                            expertise in your field (e.g., certifications,
+                            portfolio).
+                        </li>
+                        <li>
+                            <strong>Approval Process:</strong> Your application
+                            will be reviewed within 3-5 business days.
+                        </li>
+                    </ul>
+                </div>
+            </Modal>
         </div>
     );
 }

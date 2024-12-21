@@ -147,7 +147,7 @@ const initCourse = {
 function OverviewCourse() {
     const user = useSelector(userSelector);
     var { title } = useParams();
-    title = decodeURIComponent(title).replace(/-/g, " ");
+    // title = decodeURIComponent(title);
     const [course, setCourse] = useState(initCourse);
     const [totalLessons, setTotalLessons] = useState(0);
     const navigate = useNavigate();
@@ -162,12 +162,10 @@ function OverviewCourse() {
                         await userService.checkEnrollmentAndRetrieveCourse(
                             title
                         );
-                    if (response.enrolled)
-                        navigate(
-                            "/course/" + utils.formatStringInUrl(course.title)
-                        );
+
+                    if (response.enrolled) navigate("/course/" + course.title);
                 } else {
-                    response = await publicService.getCourseById(title);
+                    response = await publicService.getCourseByTitle(title);
                 }
                 const sections = response.sections;
                 let total = 0;
@@ -184,15 +182,30 @@ function OverviewCourse() {
         fetchApi();
     }, [title]);
 
+    const enrollCourse = async (courseId) => {
+        try {
+            await userService.enrollCourse(courseId);
+            navigate("/course/" + course?.id);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
     const handleEnrollCourse = (id) => {
         if (userInfo === null) {
             sessionStorage.setItem("prevPath", window.location.pathname);
             navigate("/login");
             return;
         }
-        if (course.enrolled) {
-            navigate("/course/" + utils.formatStringInUrl(course.title));
+        if (course?.enrolled) {
+            navigate("/course/" + course?.id);
             return;
+        } else if (course?.enrolled || course?.price === 0) {
+            try {
+                enrollCourse(course?.id);
+            } catch (error) {
+                toast.error("Enroll course failed");
+            }
         } else {
             navigate(
                 `/course/${utils.formatStringInUrl(course.title)}/payment`
@@ -457,13 +470,19 @@ function OverviewCourse() {
                                 <h4 className="font-semibold mb-3">
                                     Description
                                 </h4>
-                                <div
+                                {/* <div
                                     dangerouslySetInnerHTML={{
                                         __html: course.description,
                                     }}
                                     className={clsx(
                                         "max-sm:text-xs md:text-base text-black"
                                     )}
+                                ></div> */}
+                                <div
+                                    className="overflow-hidden text-[#1C252E] font-medium text-base content-html"
+                                    dangerouslySetInnerHTML={{
+                                        __html: course.description,
+                                    }}
                                 ></div>
                             </div>
                         </div>

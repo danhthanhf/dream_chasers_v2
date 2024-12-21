@@ -1,5 +1,6 @@
 package com.dreamchasers.recoverbe.jwt;
 
+import com.dreamchasers.recoverbe.entity.User.User;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;

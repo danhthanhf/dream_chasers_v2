@@ -1,5 +1,62 @@
 import publicInstance from "../instance";
 
+export const getDataProfile = async (email, data = "posts") => {
+    try {
+        const res = await publicInstance.get(`/users/${email}?data=${data}`);
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const getProfileByEmail = async (email, type = "post") => {
+    try {
+        const res = await publicInstance.get(
+            `/users/${email}/profile?type=${type}`
+        );
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const getCommentById = async (commentId) => {
+    try {
+        const res = await publicInstance.get(`/comments/${commentId}`);
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const filterRatingByStarAndComment = async (
+    courseId,
+    star,
+    comment,
+    page,
+    size
+) => {
+    try {
+        const res = await publicInstance.get(
+            `/courses/${courseId}/ratings?star=${star}&comment=${comment}&page=${page}&size=${size}`
+        );
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
+export const getStatisticRatingOfCourse = async (courseId) => {
+    try {
+        const res = await publicInstance.get(
+            `/courses/${courseId}/ratings/statistic`
+        );
+        return res.content;
+    } catch (error) {
+        return Promise.reject(error);
+    }
+};
+
 export const getAllCategoriesAndPrice = async (
     deleted = false,
     page = 0,
@@ -20,7 +77,7 @@ export const getAllCategoriesAndPrice = async (
 export const getCourseByTitle = async (title) => {
     try {
         const result = await publicInstance.get(
-            `/course?title=${encodeURIComponent(title)}`
+            `/courses?title=${encodeURIComponent(title)}`
         );
         return result.content;
     } catch (error) {
@@ -51,7 +108,7 @@ export const getCourseByNameAndCategory = async (
 ) => {
     try {
         const result = await publicInstance.get(
-            `/course?title=${encodeURIComponent(
+            `/courses?title=${encodeURIComponent(
                 title
             )}&categoryId=${categoryId}&page=${page}&selected=${selected}`
         );
@@ -92,7 +149,7 @@ export const getAllTag = async () => {
 export const getAllCourse = async (page = 0, size = 5) => {
     try {
         const result = await publicInstance.get(
-            `/course/getAll?page=${page}&size=${size}`
+            `/courses/getAll?page=${page}&size=${size}`
         );
         return result.content;
     } catch (error) {
@@ -102,7 +159,9 @@ export const getAllCourse = async (page = 0, size = 5) => {
 
 export const getCourseById = async (id, isDeleted = "false") => {
     try {
-        return await publicInstance.get(`/course/${id}?isDeleted=${isDeleted}`);
+        return await publicInstance.get(
+            `/courses/${id}?isDeleted=${isDeleted}`
+        );
     } catch (error) {
         return Promise.reject(error);
     }

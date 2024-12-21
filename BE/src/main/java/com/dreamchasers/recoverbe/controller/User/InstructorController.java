@@ -20,7 +20,14 @@ public class InstructorController {
     private final InstructorService instructorService;
 
 
-    @GetMapping("/course/available")
+
+    @GetMapping("/courses/{courseId}")
+    public ResponseEntity<ResponseObject> getCourseById(@PathVariable UUID courseId) {
+        var result = instructorService.getCourseById(courseId);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @GetMapping("/courses/available")
     public ResponseEntity<ResponseObject> getAvailableCourseByTitle(@RequestParam("title") String title,
                                                            @RequestParam String categoryId,
                                                            @RequestParam(defaultValue = "0") int page,
@@ -30,49 +37,55 @@ public class InstructorController {
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @GetMapping("/course/available/getAll")
+    @GetMapping("/courses/available/getAll")
     public ResponseEntity<ResponseObject> getAllAvailableCourse(@RequestParam String status,@RequestParam String categoryId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         var result = instructorService.getAllByStatusCourse(status, categoryId, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @GetMapping("/course/category")
+    @GetMapping("/courses/category")
     public ResponseEntity<ResponseObject> getCourseByCategoryIdAndStatus(@RequestParam String categoryId, @RequestParam String status, @RequestParam(defaultValue = "false") boolean deleted, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
         var result = instructorService.getAllCourseDeleteByCategoryId(status.toUpperCase(), categoryId, deleted, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @DeleteMapping("/course/delete/soft/{id}")
+    @DeleteMapping("/courses/delete/soft/{id}")
     public ResponseEntity<ResponseObject> softDeleteCourse(@PathVariable UUID id, @RequestParam int page, @RequestParam int size) {
         var result = courseService.softDelete(id, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @DeleteMapping("/course/delete/soft/list")
+    @DeleteMapping("/courses/delete/soft/list")
     public ResponseEntity<ResponseObject> softDeleteListCourse(@RequestParam List<UUID> ids) {
         var result = courseService.softDeleteList(ids);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/course/{courseId}/status")
+    @PutMapping("/courses/{courseId}/status")
     public ResponseEntity<ResponseObject> changeCourseStatus(@PathVariable UUID courseId, @RequestBody CoursePostStatus status) {
         ResponseObject result = courseService.authorChangeCourseStatus(courseId, status);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PostMapping("/course/create")
+    @PutMapping("/courses/{courseId}")
+    public ResponseEntity<ResponseObject> updateCourse(@PathVariable UUID courseId, @RequestBody CourseDTO course) {
+        var result = courseService.updateCourse(courseId, course);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @PostMapping("/courses")
     public ResponseEntity<ResponseObject> createCourse(@RequestBody CourseDTO course) {
         var result = courseService.createCourse(course);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @DeleteMapping("/course/restore/{id}")
+    @DeleteMapping("/courses/restore/{id}")
     public ResponseEntity<ResponseObject> restoreCourse(@PathVariable UUID id, @RequestParam int page, @RequestParam int size) {
         var result = courseService.restoreCourseById(id, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @DeleteMapping("/course/restore/list")
+    @DeleteMapping("/courses/restore/list")
     public ResponseEntity<ResponseObject> restoreListCourse(@RequestParam List<UUID> ids) {
         var result = courseService.restoreList(ids);
         return ResponseEntity.status(result.getStatus()).body(result);

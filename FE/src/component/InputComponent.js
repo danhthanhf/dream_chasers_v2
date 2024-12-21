@@ -8,14 +8,17 @@ function InputComponent({
     value = "",
     size = "md",
     noLabel = false,
-    autoFocus = false,
+    onFocus = () => {},
+    autoFocus = true,
+    ref = null,
+    classNames = "",
     onHandleChange = () => {},
 }) {
     const id = useId();
     return (
         <div
             className={clsx(
-                "relative rounded-lg items-center border-1 transition-all ease-linear focus-within:border-black border-gray-300 hover:border-black"
+                `relative rounded-lg items-center border-1 transition-all ease-linear focus-within:border-black border-gray-300 hover:border-black ${classNames}`
             )}
         >
             <div className="p-[16px]">
@@ -29,8 +32,10 @@ function InputComponent({
                 )}
                 {size !== "lg" ? (
                     <input
-                        value={value}
+                        ref={ref}
+                        onFocus={onFocus}
                         id={id}
+                        value={value}
                         autoFocus={autoFocus}
                         onChange={onHandleChange}
                         placeholder={placeholder}
@@ -39,6 +44,9 @@ function InputComponent({
                     />
                 ) : (
                     <textarea
+                        ref={ref}
+                        onFocus={onFocus}
+                        id={id}
                         onChange={onHandleChange}
                         value={value}
                         autoFocus={autoFocus}
@@ -47,7 +55,6 @@ function InputComponent({
                             "text-[16px] outline-none text-sm w-full h-[68px]"
                         )}
                         name=""
-                        id={id}
                     ></textarea>
                 )}
             </div>

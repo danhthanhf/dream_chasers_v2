@@ -277,7 +277,7 @@ function EditCourse() {
 
     return (
         <div className="flex justify-center w-full ">
-            <div className="wrapMainDash mr-auto w-3/4 ">
+            <div className="wrapMainDash w-3/4 ">
                 <h3 className="titleMainDash">Edit</h3>
                 <div
                     className={clsx(

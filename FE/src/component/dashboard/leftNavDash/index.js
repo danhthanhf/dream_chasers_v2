@@ -30,7 +30,6 @@ const SubItem = ({ path, title, isSelect }) => {
 };
 
 function LeftNavDash() {
-    const [close, setClose] = useState(false);
     const [listOpen, setListOpen] = useState([]);
     const [handleApp, setHandleApp] = useState(false);
     const navShow = useSelector((state) => state.nav.adminShow);
@@ -388,7 +387,6 @@ function LeftNavDash() {
                                 </ul>
                             </div>
                         )}
-
                         <li
                             id="categoryLink"
                             className={clsx(styles.actionLink, "relative", {
@@ -477,16 +475,12 @@ function LeftNavDash() {
                         )}
                         <li
                             id="invoiceLink"
-                            className={clsx(
-                                styles.actionLink,
-                                "relative",
-                                {
-                                    "px-2": !navShow,
-                                    "px-6": navShow,
-                                    [styles.active]:
-                                        listOpen.includes("invoiceLink"),
-                                }
-                            )}
+                            className={clsx(styles.actionLink, "relative", {
+                                "px-2": !navShow,
+                                "px-6": navShow,
+                                [styles.active]:
+                                    listOpen.includes("invoiceLink"),
+                            })}
                             onClick={handleOnSub}
                         >
                             <Ink></Ink>

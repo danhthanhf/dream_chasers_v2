@@ -10,14 +10,25 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/public/course")
+@RequestMapping("/api/v1/public/courses")
 public class PCourseController {
     private final CourseService courseService;
 
+    @GetMapping("/{courseId}/ratings")
+    public ResponseEntity<ResponseObject> getRatings(@PathVariable UUID courseId, @RequestParam String comment, @RequestParam(defaultValue = "5") int star, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "5") int size) {
+        var result = courseService.getRatingsByStarAndComment(courseId, comment, star, page, size);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
+
+    @GetMapping("/{courseId}/ratings/statistic")
+    public ResponseEntity<ResponseObject> getRatingStatistic(@PathVariable UUID courseId) {
+        var result = courseService.getRatingStatistic(courseId);
+        return ResponseEntity.status(result.getStatus()).body(result);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ResponseObject> getCourseById(@PathVariable UUID id, @RequestParam boolean isDeleted){
-        var result = courseService.getCourseById(id, isDeleted);
+        var result = courseService.getCourseByIdAndDeleted(id, isDeleted);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
@@ -33,4 +44,5 @@ public class PCourseController {
         var result = courseService.getByTitle(title);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
+
 }

@@ -15,5 +15,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ResponseObject> handleAllException(Exception e) {
+        var response = ResponseObject.builder().status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .message(e.getMessage()).build();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 
 }

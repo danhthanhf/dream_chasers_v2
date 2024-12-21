@@ -1,10 +1,10 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.dto.CategoryAndCoursePriceDTO;
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.entity.CourseKit.Category;
-import com.dreamchasers.recoverbe.entity.CourseKit.Course;
 import com.dreamchasers.recoverbe.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -103,7 +103,7 @@ public class CategoryService {
         return ResponseObject.builder().status(HttpStatus.OK).content(categories).build();
     }
 
-    public void UpdateToTalCourseForList(List<Category> categories, boolean isAdd) {
+    public void UpdateCountTotalCourseForListCategory(List<Category> categories, boolean isAdd) {
         for(var category : categories) {
             category.setTotalCourse(category.getTotalCourse() + 1);
         }
@@ -136,7 +136,7 @@ public class CategoryService {
 
     public ResponseObject createCategory(String name)
     {
-        var result = categoryRepository.findByName(name);
+        var result = categoryRepository.findByName(name).orElse(null);
         if(result == null) {
             result = Category.builder().name(name).build();
             categoryRepository.save(result);
@@ -145,17 +145,45 @@ public class CategoryService {
         return ResponseObject.builder().status(HttpStatus.BAD_REQUEST).message("Category existed").build();
     }
 
-    public void updateCategoriesForCourse(Course course, List<String> categories) {
-        List<Category> newCategories = new ArrayList<>();
-        for(var temp : categories) {
-            var cate = categoryRepository.findByName(temp);
-            if(cate != null) {
-                newCategories.add(cate);
-                course.getCategories().add(cate);
+    private boolean isContain(List<Category> categories, String name) {
+        for(var category : categories) {
+            if(category.getName().equals(name)) {
+                return true;
             }
         }
+        return false;
+    }
 
-        course.getCategories().removeIf(old -> !newCategories.contains(old));
+    public List<Category> updateCategoriesForCourse(List<Category> oldCategories, List<String> newCategories) {
+        var updateCategories = new ArrayList<Category>();
+        if(newCategories == null || newCategories.isEmpty()) {
+            oldCategories.forEach(category -> {
+                category.setTotalCourse(category.getTotalCourse() - 1);
+                if(category.getTotalCourse() == 0) {
+                    category.setDeleted(true);
+                }
+            });
+            categoryRepository.saveAll(oldCategories);
+            return updateCategories;
+        }
+
+        oldCategories.forEach(c -> {
+            if(newCategories.contains(c.getName())) {
+                updateCategories.add(c);
+            } else {
+                c.setTotalCourse(c.getTotalCourse() - 1);
+            }
+        });
+
+        newCategories.forEach(name -> {
+           if(!isContain(oldCategories, name)) {
+                var newCategory = categoryRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Category not found"));
+                newCategory.setTotalCourse(newCategory.getTotalCourse() + 1);
+                updateCategories.add(newCategory);
+           }
+        });
+
+        return updateCategories;
     }
 
 

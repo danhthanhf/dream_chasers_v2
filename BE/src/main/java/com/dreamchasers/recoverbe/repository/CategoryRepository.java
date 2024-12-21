@@ -21,7 +21,7 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     Page<Category> findByNameContaining(String name, Pageable pageable);
 
-    Category findByName(String name);
+    Optional<Category> findByName(String name);
 
     @Query("SELECT COUNT(*) FROM Course co JOIN co.categories c where c.id = :categoryId")
     long existCourseByCategoryId(UUID categoryId);

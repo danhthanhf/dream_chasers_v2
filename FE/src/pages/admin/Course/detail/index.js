@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react"; // This imports the useState hook
-import styles from "../../../course/detail/DetailCourse.module.scss";
+import styles from "../../../course/learning/DetailCourse.module.scss";
 import { Link, useParams } from "react-router-dom";
 import clsx from "clsx";
-import * as adminService from "../../../../api/apiService/adminService";
 import * as publicService from "../../../../api/apiService/publicService";
 import logoPage from "../../../../assets/images/logo.png";
 import { useSelector } from "react-redux";
-import Comment from "../../../../component/comment/index.js";
+// import Comment from "../../../../component/comment/index.js";
 
 const CourseHero = ({ video = "", thumbnail }) => {
     let link;
@@ -294,14 +293,14 @@ function AdminDetailCourse() {
                         </div>
                     </div>
                 </div>
-                {openModal && (
+                {/* {openModal && (
                     <Comment
                         courseId={id}
                         lessonId={lessonSelected.id}
                         openModal={openModal}
                         funcCloseModal={handleCloseComment}
                     ></Comment>
-                )}
+                )} */}
             </main>
         </div>
     );

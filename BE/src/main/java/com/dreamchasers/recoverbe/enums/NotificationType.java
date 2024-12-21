@@ -19,7 +19,9 @@ public enum NotificationType {
     POST_COMMENT ("POST COMMENT"),
     POST_LIKE ("POST LIKE"),
     POST_VOTE ("POST VOTE"),
-    COMMENT_REPLY ("COMMENT REPLY"),;
+    COMMENT_REPLY ("COMMENT REPLY"),
+    NEW_COMMENT ("NEW COMMENT"),
+    ADD_FRIEND ("ADD FRIEND");
 
     NotificationType(String value) {
         this.value = value;

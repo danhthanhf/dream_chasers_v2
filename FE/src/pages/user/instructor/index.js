@@ -50,7 +50,7 @@ export function InstructorNav() {
                             [styles.close]: !navShow,
                         })}
                     >
-                        Manager
+                        Overview
                     </li>
                     <div className={clsx(styles.listItem)}>
                         <li
@@ -118,21 +118,19 @@ export function InstructorNav() {
                             >
                                 <ul className={clsx(styles.subList)}>
                                     <SubItem
-                                        path={
-                                            "/instructor-dashboard/course/list"
-                                        }
+                                        path={"/instructor-dashboard/courses"}
                                     ></SubItem>
                                     <SubItem
                                         title={1}
                                         path={
-                                            "/instructor-dashboard/course/create"
+                                            "/instructor-dashboard/courses/create"
                                         }
                                     ></SubItem>
 
                                     <SubItem
                                         title={2}
                                         path={
-                                            "/instructor-dashboard/course/historyDelete"
+                                            "/instructor-dashboard/courses/historyDelete"
                                         }
                                     ></SubItem>
                                 </ul>

@@ -16,7 +16,8 @@ import net.minidev.json.annotate.JsonIgnore;
 public class Progress extends BaseModel {
     private boolean isCompleted;
     private int timeStamp;
-
+    private int duration;
+    private boolean isLocked;
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnore
     private Lesson lesson;

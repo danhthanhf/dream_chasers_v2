@@ -1,6 +1,7 @@
 package com.dreamchasers.recoverbe.service;
 
-import com.dreamchasers.recoverbe.helper.Handle.ConvertService;
+import com.dreamchasers.recoverbe.exception.EntityNotFoundException;
+import com.dreamchasers.recoverbe.helper.converters.ConvertService;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;
 import com.dreamchasers.recoverbe.enums.CoursePostStatus;
 import com.dreamchasers.recoverbe.entity.CourseKit.Course;
@@ -26,6 +27,11 @@ public class InstructorService {
     private final ConvertService convertService;
     private final List<CoursePostStatus> availableStatus = List.of(CoursePostStatus.DRAFT, CoursePostStatus.PUBLISHED, CoursePostStatus.PENDING, CoursePostStatus.REJECTED);
 
+    public ResponseObject getCourseById(UUID courseId) {
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new EntityNotFoundException("Course not found"));
+        var res = convertService.convertToCourseDTO(course);
+        return ResponseObject.builder().status(HttpStatus.OK).content(res).build();
+    }
 
     public ResponseObject getAllAvailableCourseByCourseTitleAndCategory(String title, String categoryId, boolean isDeleted, int page, int size) {
         Page<Course> coursePage;

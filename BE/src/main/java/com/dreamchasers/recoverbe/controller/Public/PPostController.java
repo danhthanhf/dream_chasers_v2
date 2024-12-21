@@ -19,6 +19,7 @@ public class PPostController {
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
+
     @GetMapping("/list")
     public ResponseEntity<ResponseObject> getList(@RequestParam int page, @RequestParam int size) {
         var result = postService.getPosts(page, size);

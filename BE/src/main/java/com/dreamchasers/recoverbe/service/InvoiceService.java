@@ -1,7 +1,7 @@
 package com.dreamchasers.recoverbe.service;
 
 import com.dreamchasers.recoverbe.entity.CourseKit.Course;
-import com.dreamchasers.recoverbe.entity.Invoice;
+import com.dreamchasers.recoverbe.entity.User.Invoice;
 import com.dreamchasers.recoverbe.entity.User.User;
 import com.dreamchasers.recoverbe.enums.MethodPayment;
 import com.dreamchasers.recoverbe.helper.component.ResponseObject;

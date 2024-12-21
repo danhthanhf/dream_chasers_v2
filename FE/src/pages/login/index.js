@@ -9,6 +9,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import ShowPassword from "../../component/auth/ShowPassword.js";
 import clsx from "clsx";
 import styles from "./Login.module.scss";
+import websocketService from "../../service/WebsocketService.js";
 
 export default function Login() {
     const initFormForgotData = {
@@ -94,10 +95,9 @@ export default function Login() {
 
         const fetchApi = async () => {
             toast.promise(authService.login({ ...formData }), {
-                loading: "Đang tải...",
+                loading: "Loading...",
                 success: (data) => {
                     const { accessToken, ...user } = data.content;
-                    console.log(data.content);
                     const payload = {
                         token: accessToken,
                         user,
@@ -106,10 +106,11 @@ export default function Login() {
                     const prePath = sessionStorage.getItem("prevPath");
                     prePath ? navigate(prePath) : navigate("/");
                     sessionStorage.removeItem("prevPath");
-                    return "Chào mừng bạn tới Dream Chasers";
+
+                    return "Welcome to Dream Chasers";
                 },
                 error: (error) => {
-                    return "Email hoặc mật khẩu không đúng !";
+                    return "Email or password incorrect !";
                 },
             });
         };

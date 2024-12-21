@@ -10,37 +10,38 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/me/notification")
+@RequestMapping("/api/v1/notifications")
 public class NotificationController {
     private final NotificationService notificationService;
 
-    @GetMapping("/{email}/getAll")
-    public ResponseEntity<ResponseObject> getAll(@PathVariable String email, @RequestParam int page, @RequestParam int size) {
-        var result = notificationService.getAll(email, page, size);
+
+    @GetMapping("/getAll")
+    public ResponseEntity<ResponseObject> getAll(@RequestParam(defaultValue = "all") String type, @RequestParam int page, @RequestParam int size) {
+        var result = notificationService.getAll(type, page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @GetMapping("{email}/getAllUnread")
-    public ResponseEntity<ResponseObject> getAllUnread(@PathVariable String email, @RequestParam int page, @RequestParam int size) {
-        var result = notificationService.getAllUnread(email, page, size);
+    @GetMapping("/getAllUnread")
+    public ResponseEntity<ResponseObject> getAllUnread(@RequestParam int page, @RequestParam int size) {
+        var result = notificationService.getAllUnread(page, size);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/{email}/readAll")
-    public ResponseEntity<ResponseObject> readAllNotification(@PathVariable String email) {
-        var result = notificationService.readAllNotification(email);
+    @PutMapping("/readAll")
+    public ResponseEntity<ResponseObject> readAllNotification() {
+        var result = notificationService.readAllNotification();
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @DeleteMapping("/{email}/removeAll")
-    public ResponseEntity<ResponseObject> removeAllNotification(@PathVariable String email) {
-        var result = notificationService.removeAllNotificationsByEmail(email);
+    @DeleteMapping("/removeAll")
+    public ResponseEntity<ResponseObject> removeAllNotification() {
+        var result = notificationService.removeAllNotificationsByEmail();
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
-    @PutMapping("/{email}/read/{id}")
-    public ResponseEntity<ResponseObject> readNotification(@PathVariable String email, @PathVariable UUID id) {
-        var result = notificationService.readNotification(email, id);
+    @PutMapping("/{id}/read")
+    public ResponseEntity<ResponseObject> readNotification(@PathVariable UUID id) {
+        var result = notificationService.readNotification(id);
         return ResponseEntity.status(result.getStatus()).body(result);
     }
 
