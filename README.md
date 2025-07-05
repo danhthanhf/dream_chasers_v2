@@ -112,8 +112,8 @@ docker-compose up --build
 
 ## 🧑‍💻 Author
 
-* \danhthanhf
-* Github: \[[your-github-url]](https://github.com/danhthanhf)
+* Dev: danhthanhf
+* Github: (https://github.com/danhthanhf)
 
 ---
 
