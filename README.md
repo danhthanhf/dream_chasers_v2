@@ -112,8 +112,8 @@ docker-compose up --build
 
 ## 🧑‍💻 Author
 
-* \[Your Name] - Java Backend Intern @R2S
-* Github: \[your-github-url]
+* \danhthanhf
+* Github: \[[your-github-url]](https://github.com/danhthanhf)
 
 ---
 
